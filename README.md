@@ -1,3 +1,9 @@
+<!--
+Copyright 2024 Deutsche Telekom IT GmbH
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 <p align="center">
   <img src="docs/img/starlight-icon.svg" alt="Starlight logo" width="200">
   <h1 align="center">Starlight</h1>
