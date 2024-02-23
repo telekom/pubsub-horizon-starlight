@@ -31,6 +31,7 @@ import org.springframework.util.MultiValueMap;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static de.telekom.eni.pandora.horizon.metrics.HorizonMetricsConstants.METRIC_PUBLISHED_EVENTS;
 
@@ -150,6 +151,7 @@ public class PublisherService {
     public void publish(Event event, String publisherId, String environment,
                         MultiValueMap<String, String> httpHeaders) throws HorizonStarlightException {
 
+
         if (starlightConfig.isEnablePublisherCheck()) {
             checkEventTypeOwnership(environment, event.getType(), publisherId);
         }
@@ -164,6 +166,7 @@ public class PublisherService {
 
         message.setStatus(Status.PROCESSED);
         message.setHttpHeaders(filterHttpHeaders(httpHeaders));
+
 
         addTrustedStartTimeForObservation(message);
 
@@ -219,10 +222,12 @@ public class PublisherService {
         if (httpHeaders != null) {
             httpHeaders.forEach((k, v) -> {
                 if (starlightConfig.getHeaderPropagationBlacklist().stream().noneMatch(k::matches)) {
-                    v.forEach(e -> filteredHeaders.add(k, e));
+                    var unqiueValues = v.stream().distinct().toList();
+                    unqiueValues.forEach(e -> filteredHeaders.add(k, e));
                 }
             });
         }
+
 
         return filteredHeaders;
     }
