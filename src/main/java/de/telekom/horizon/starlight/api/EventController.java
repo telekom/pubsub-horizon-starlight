@@ -64,6 +64,7 @@ public class EventController {
                                               @PathVariable String environment,
                                               @RequestHeader MultiValueMap<String, String> httpHeaders) throws HorizonStarlightException {
 
+
         var observation = createObservationFromEvent(event);
 
         httpHeaders.add(HTTPHeader.TRACK_LATENCY.getValue(), observation.isEmpty() ? "0": "1");
