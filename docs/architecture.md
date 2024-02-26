@@ -19,11 +19,11 @@ The publishTask starts with the validation of the eventType if the publisherChec
 It checks whether the eventType has been properly exposed and whether a subscriber/consumer exists for the corresponding eventType.
 If this is not the case, the Starlight component returns a 202 Accepted statusCode. Otherwise, the publisher is validated with the eventType to ensure that the eventType is only used by the publisher for which it is authorized.
 
-This leads to schema validation, if it is also enabled.
-After the publisherId has been validated, the schema of the eventType is validated.
+The next step is to trigger a schema check when the function is activated.
+The schema check starts with validating the publisherId and checking the schema of the eventType.
 If the schema is valid, the json event is validated with the json schema.
 If this fails, a 400 BadRequest is returned.
-Otherwise, schemaValidation is terminated and the event is timestamped.
+Otherwise, the schemaValidation is canceled and the event is provided with a timestamp.
 
 If checkEventTypeOwnerShip and schemaValidation have been successfully completed or disabled and the event has been timestamped, the publishEventMessage is created.
 The status of the message is set to PROCESSED and the specified http filter is applied. After that, Starlight tries to write the event with the status PROCESSED into the kafka.
