@@ -7,7 +7,6 @@ package de.telekom.horizon.starlight.api;
 import de.telekom.eni.pandora.horizon.kubernetes.SubscriptionResourceListener;
 import de.telekom.eni.pandora.horizon.model.event.Event;
 import de.telekom.eni.pandora.horizon.tracing.HorizonTracer;
-import de.telekom.eni.pandora.horizon.victorialog.client.VictoriaLogClient;
 import de.telekom.horizon.starlight.config.StarlightConfig;
 import de.telekom.horizon.starlight.config.rest.WebSecurityConfig;
 import de.telekom.horizon.starlight.exception.*;
@@ -74,8 +73,6 @@ class EventControllerTest {
     @MockBean
     RestResponseEntityExceptionHandler restResponseEntityExceptionHandler;
     @MockBean
-    VictoriaLogClient victoriaLogClient;
-    @MockBean
     RedisReportingService redisReportingService;
 
     @Autowired
@@ -88,7 +85,7 @@ class EventControllerTest {
     @BeforeEach
     void beforeEach() {
         validator = spy(Validation.buildDefaultValidatorFactory().getValidator());
-        webClient = MockMvcWebTestClient.bindToController(new EventController(tokenService, publisherService, tracer, victoriaLogClient, redisReportingService)).controllerAdvice(restResponseEntityExceptionHandler).build();
+        webClient = MockMvcWebTestClient.bindToController(new EventController(tokenService, publisherService, tracer, redisReportingService)).controllerAdvice(restResponseEntityExceptionHandler).build();
     }
 
     @SneakyThrows

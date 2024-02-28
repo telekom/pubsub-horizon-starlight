@@ -4,15 +4,12 @@
 
 package de.telekom.horizon.starlight.service;
 
-import de.telekom.eni.eniapi.model.EventSpecification;
 import de.telekom.eni.pandora.horizon.model.event.Event;
+import de.telekom.eni.pandora.horizon.schema.SchemaStore;
 import de.telekom.eni.pandora.horizon.tracing.HorizonTracer;
-import de.telekom.horizon.starlight.cache.SchemaCache;
 import de.telekom.horizon.starlight.exception.EventNotCompliantWithSchemaException;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.commons.lang3.tuple.MutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.SchemaException;
 import org.everit.json.schema.loader.SchemaLoader;
@@ -41,7 +38,7 @@ class SchemeValidationServiceTest {
     public static final String PUB_ID_MOCK = "pub--id--mock";
     public static final String ENV_MOCK = "mock";
     @Mock
-    SchemaCache schemaCache;
+    SchemaStore schemaStore;
 
     @Mock
     HorizonTracer tracer;
@@ -53,7 +50,7 @@ class SchemeValidationServiceTest {
     @MethodSource("provideParameters")
     @DisplayName("isValid should return true when event complies with scheme")
     void isValidTest(int specificationType, boolean withCorrectData, boolean shouldThrow) {
-        when(schemaCache.getSchemaForEventType(anyString(), anyString(), anyString(), anyString())).thenReturn(generateSchemes(specificationType));
+        when(schemaStore.getSchemaForEventType(anyString(), anyString(), anyString(), anyString())).thenReturn(generateSchemes(specificationType));
         Event event = generateEvent(withCorrectData);
 
         if (shouldThrow) {
@@ -66,7 +63,7 @@ class SchemeValidationServiceTest {
     @Test
     @DisplayName("isValid should return true when no specification is given")
     void shouldReturnTrueWhenNoSpecIsGiven() {
-        when(schemaCache.getSchemaForEventType(anyString(), anyString(), anyString(), anyString())).thenReturn(null);
+        when(schemaStore.getSchemaForEventType(anyString(), anyString(), anyString(), anyString())).thenReturn(null);
         Event event = generateEvent(true);
 
         assertDoesNotThrow(() -> schemaValidationService.validate(event, ENV_MOCK, PUB_ID_MOCK));
@@ -75,7 +72,7 @@ class SchemeValidationServiceTest {
     @Test
     @DisplayName("isValid should return false when event data is no valid json")
     void shouldReturnFalseWhenEventDataIsNoValidJson() {
-        when(schemaCache.getSchemaForEventType(anyString(), anyString(), anyString(), anyString())).thenReturn(generateSchemes(1));
+        when(schemaStore.getSchemaForEventType(anyString(), anyString(), anyString(), anyString())).thenReturn(generateSchemes(1));
         Event event = generateEvent(true);
         event.setData("<optional JSON scheme>");
 
@@ -90,17 +87,14 @@ class SchemeValidationServiceTest {
         // We currently cannot safely assign a schema to it, but we should not throw an exception in this case
         assertDoesNotThrow(() -> schemaValidationService.validate(event, "mock", "gateway"));
 
-        verify(schemaCache, times(0)).getSchemaForEventType(anyString(), anyString(), anyString(), anyString());
+        verify(schemaStore, times(0)).getSchemaForEventType(anyString(), anyString(), anyString(), anyString());
     }
 
-    private Pair<Boolean, Schema> generateSchemes(int specificationType) {
-        MutablePair<Boolean, Schema> validatedScheme = new MutablePair<>();
-
-        EventSpecification eventSpecification = new EventSpecification();
-        eventSpecification.setType("foo.bar.v1");
+    private Schema generateSchemes(int specificationType) {
+        String spec = "";
         switch (specificationType) {
             case 1:
-                eventSpecification.setSpecification(
+                spec =
                         """
                                 {
                                 "title": "Foo Bar",
@@ -113,12 +107,11 @@ class SchemeValidationServiceTest {
                                   },
                                   "required": ["foo"]
                                 }
-                                """);
-                validatedScheme.setLeft(true);
+                                """;
                 break;
             //Invalid scheme
             case 2:
-                eventSpecification.setSpecification(
+                spec =
                         """
                                 {
                                 "title": "Foo Bar",
@@ -131,19 +124,17 @@ class SchemeValidationServiceTest {
                                     "required": ["foo"]
                                   }
                                 }
-                                """);
-                validatedScheme.setLeft(false);
+                                """;
                 break;
             default:
                 return null;
         }
         Schema schema;
         try {
-            schema = getSchemaFromString(eventSpecification.getSpecification());
-            validatedScheme.setRight(schema);
-            return validatedScheme;
+            schema = getSchemaFromString(spec);
+            return schema;
         } catch (SchemaException ex) {
-            return validatedScheme;
+            return null;
         }
     }
 

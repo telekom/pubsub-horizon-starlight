@@ -4,10 +4,8 @@
 
 package de.telekom.horizon.starlight.config;
 
-import de.telekom.eni.eniapiclient.EniApiClient;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
@@ -40,11 +38,4 @@ public class StarlightConfig {
     @Value("#{'${starlight.payloadCheckExemptionList}'.split(',')}")
     private List<String> payloadCheckExemptionList;
 
-    @Bean
-    EniApiClient eniApiClient(@Value("${eniapi.baseurl}") String baseUrl,
-                              @Value("${oidc.issuerUrl}") String issuerUrl,
-                              @Value("${oidc.clientId}") String clientId,
-                              @Value("${oidc.clientSecret}") String clientSecret) {
-        return new EniApiClient(baseUrl, issuerUrl, clientId, clientSecret);
-    }
 }

@@ -4,8 +4,8 @@
 
 package de.telekom.horizon.starlight.test.utils;
 
-import com.hazelcast.org.apache.commons.codec.digest.DigestUtils;
 import de.telekom.horizon.starlight.config.StarlightConfig;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
