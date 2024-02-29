@@ -5,10 +5,9 @@
 import org.springframework.boot.gradle.plugin.SpringBootPlugin
 
 plugins {
-    id 'org.springframework.boot' version '3.2.2'
+    id 'org.springframework.boot' version '3.2.3'
     id 'io.spring.dependency-management' version '1.1.4'
     id 'java'
-    id "org.sonarqube" version "4.4.1.3373"
     id "jacoco"
 }
 
@@ -44,27 +43,13 @@ configurations {
     }
 }
 
-ext {
-    repoBase = System.getenv("PANDORA_ARTIFACTORY_GRADLE_CONTEXT") ?: "$artifactory_contextUrl"
+repositories {
+    mavenCentral()
 }
 
-repositories {
-    maven {
-        credentials {
-            username System.getenv('PANDORA_ARTIFACTORY_GRADLE_USERNAME') ?: "$artifactory_user"
-            password System.getenv('PANDORA_ARTIFACTORY_GRADLE_PASSWORD') ?: "$artifactory_password"
-        }
-        url "$repoBase/maven-central"
-    }
-    maven {
-        credentials {
-            username System.getenv('PANDORA_ARTIFACTORY_GRADLE_USERNAME') ?: "$artifactory_user"
-            password System.getenv('PANDORA_ARTIFACTORY_GRADLE_PASSWORD') ?: "$artifactory_password"
-        }
-        url "$repoBase/dhei-pandora-gradle"
-    }
-    maven { url 'https://repo.spring.io/milestone' }
-    mavenLocal()
+ext {
+    // this is internal, overwrite with your specific implementation if you want
+    schemalValidationImplDependency = System.getenv('ADDITIONAL_SCHEMASTORE_IMPL') ?: System.getProperty("schemaStoreImplMavenDependency") ?: ""
 }
 
 dependencies {
@@ -82,6 +67,9 @@ dependencies {
     testImplementation 'org.springframework.kafka:spring-kafka-test'
     testImplementation 'org.springframework.security:spring-security-test'
 
+    testImplementation 'commons-codec:commons-codec:1.16.1'
+
+
     // 3rd party
     implementation 'com.fasterxml.jackson.core:jackson-databind'
     implementation ("com.github.erosb:everit-json-schema:${everitJsonVersion}") {
@@ -96,6 +84,11 @@ dependencies {
 
     // Telekom Integration Platform
     implementation "de.telekom.eni:horizon-spring-boot-starter:${horizonParentVersion}"
+
+    // optional
+    if (!schemalValidationImplDependency.allWhitespace) {
+        implementation "${schemalValidationImplDependency}"
+    }
 
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation 'org.testcontainers:junit-jupiter'

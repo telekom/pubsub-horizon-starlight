@@ -6,7 +6,6 @@ package de.telekom.horizon.starlight.service;
 
 import brave.ScopedSpan;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.telekom.eni.pandora.commons.tracing.ScopedDebugSpanWrapper;
 import de.telekom.eni.pandora.horizon.autoconfigure.kafka.KafkaAutoConfiguration;
 import de.telekom.eni.pandora.horizon.kafka.config.KafkaProperties;
 import de.telekom.eni.pandora.horizon.kubernetes.SubscriptionResourceListener;
@@ -14,6 +13,7 @@ import de.telekom.eni.pandora.horizon.metrics.HorizonMetricsHelper;
 import de.telekom.eni.pandora.horizon.model.event.Event;
 import de.telekom.eni.pandora.horizon.model.event.PublishedEventMessage;
 import de.telekom.eni.pandora.horizon.tracing.HorizonTracer;
+import de.telekom.eni.pandora.horizon.tracing.ScopedDebugSpanWrapper;
 import de.telekom.horizon.starlight.cache.PublisherCache;
 import de.telekom.horizon.starlight.config.StarlightConfig;
 import de.telekom.horizon.starlight.exception.*;
@@ -213,9 +213,7 @@ class PublisherServiceTest {
     void eventMessagePassesValidation() {
         var event = createNewEvent();
 
-        assertDoesNotThrow(() -> {
-            publisherService.validateEvent(event);
-        });
+        assertDoesNotThrow(() -> publisherService.validateEvent(event));
     }
 
     @Test
@@ -226,9 +224,7 @@ class PublisherServiceTest {
         HorizonTestHelper.ResultCaptor<Set<ConstraintViolation>> resultCaptor = new HorizonTestHelper.ResultCaptor<>();
         doAnswer(resultCaptor).when(validator).validate(any(Event.class));
 
-        assertThrows(InvalidEventBodyException.class, () -> {
-            publisherService.validateEvent(event);
-        });
+        assertThrows(InvalidEventBodyException.class, () -> publisherService.validateEvent(event));
 
         assertThat(resultCaptor.getResult(), is(notNullValue()));
         resultCaptor.getResult().forEach(v -> System.out.println(v.getMessage()));

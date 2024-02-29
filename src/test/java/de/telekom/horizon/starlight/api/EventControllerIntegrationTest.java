@@ -5,9 +5,9 @@
 package de.telekom.horizon.starlight.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.telekom.eni.pandora.horizon.metrics.AdditionalFields;
 import de.telekom.eni.pandora.horizon.model.event.Event;
 import de.telekom.eni.pandora.horizon.model.event.PublishedEventMessage;
-import de.telekom.eni.pandora.horizon.victorialog.model.AdditionalFields;
 import de.telekom.horizon.starlight.cache.PublisherCache;
 import de.telekom.horizon.starlight.service.impl.TokenServiceMockImpl;
 import de.telekom.horizon.starlight.service.reporting.ReportingService;

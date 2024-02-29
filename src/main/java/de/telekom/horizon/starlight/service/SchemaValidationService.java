@@ -7,8 +7,8 @@ package de.telekom.horizon.starlight.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.telekom.eni.pandora.horizon.model.event.Event;
+import de.telekom.eni.pandora.horizon.schema.SchemaStore;
 import de.telekom.eni.pandora.horizon.tracing.HorizonTracer;
-import de.telekom.horizon.starlight.cache.SchemaCache;
 import de.telekom.horizon.starlight.exception.EventNotCompliantWithSchemaException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
@@ -31,13 +31,13 @@ import java.util.Optional;
 @Service
 public class SchemaValidationService {
 
-    private final SchemaCache schemaCache;
+    private final SchemaStore schemaStore;
 
     private final HorizonTracer tracer;
 
     @Autowired
-    public SchemaValidationService(SchemaCache schemaCache, HorizonTracer tracer) {
-        this.schemaCache = schemaCache;
+    public SchemaValidationService(SchemaStore schemaStore, HorizonTracer tracer) {
+        this.schemaStore = schemaStore;
         this.tracer = tracer;
     }
 
@@ -70,14 +70,9 @@ public class SchemaValidationService {
             return;
         }
 
-        Pair<Boolean, Schema> schemaCacheInstance = schemaCache.getSchemaForEventType(environment, event.getType(), splitPubId[0], splitPubId[1]);
+        Schema schemaCacheInstance = schemaStore.getSchemaForEventType(environment, event.getType(), splitPubId[0], splitPubId[1]);
         if (schemaCacheInstance != null) {
             var currentSpan = Optional.ofNullable(tracer.getCurrentSpan());
-
-            if (Boolean.FALSE.equals(schemaCacheInstance.getLeft())) {
-                log.info(String.format("Schema for event type %s is invalid.", event.getType()));
-                return;
-            }
 
             JSONObject jsonEvent;
             try {
@@ -89,7 +84,7 @@ public class SchemaValidationService {
             }
 
             try {
-                schemaCacheInstance.getRight().validate(jsonEvent);
+                schemaCacheInstance.validate(jsonEvent);
                 currentSpan.ifPresent(s -> tracer.addTagsToSpan(s, List.of(Pair.of("isMatchingSchema", "true"))));
             } catch (ValidationException ex) {
                 currentSpan.ifPresent(s -> tracer.addTagsToSpan(s, List.of(Pair.of("isMatchingSchema", "false"))));
