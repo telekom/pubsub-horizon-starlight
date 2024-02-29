@@ -29,10 +29,32 @@ For the optimal setup, ensure you have:
 
 - A running instance of Kafka
 - Access to a Kubernetes cluster on which the `Subscription` (subscriber.horizon.telekom.de) custom resource definition has been registered
-- A running instance of ENI API, which has access to the resources of the Telekom Integration Platform control plane
 
 ## Configuration
 Starlight configuration is managed through environment variables. Check the [complete list](docs/environment-variables.md) of supported environment variables for setup instructions.
+
+### Schema validation
+Starlight basically supports schema validation for incoming events. Unfortunately this part of starlight is not yet ready for open-source.
+
+If you can´t wait for this, you´re able to provide your own implementation. Basically this is done via a valid bean instance of the [SchemaStore](https://github.com/telekom/pubsub-horizon-spring-parent/blob/main/horizon-core/src/main/java/de/telekom/eni/pandora/horizon/schema/SchemaStore.java) interface from [horizon-pubsub-spring-parent](https://github.com/telekom/pubsub-horizon-spring-parent) module.
+You are able to create your own spring-boot-starter with a custom implementation and use the environment variable `ADDITIONAL_SCHEMASTORE_IMPL` to build with your custom artifact and use the following configuration or make use of the available environment variables for these properties.
+
+```yaml
+starlight:
+  features:
+    schemaValidation: true
+
+# only used for schema validation (not yet possible as OSS for starlight)
+eniapi:
+  baseurl: https://api.example.com/
+  refreshInterval: 60000
+
+# only used for schema validation (not yet possible as OSS for starlight)
+oidc:
+  issuerUrl: https://oauth.example.com/
+  clientId: foo
+  clientSecret: bar
+```
 
 ## Running Starlight
 ### Locally

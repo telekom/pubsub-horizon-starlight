@@ -97,9 +97,6 @@ dependencies {
 dependencyManagement {
     imports {
         mavenBom SpringBootPlugin.BOM_COORDINATES
-        if (!schemalValidationImplDependency.allWhitespace) {
-            mavenBom "${schemalValidationImplDependency}"
-        }
     }
 }
 
