@@ -8,6 +8,8 @@ spring:
   data:
     redis:
       url: ${STARLIGHT_REPORTING_REDIS_URL}
+  main:
+    banner-mode: off
 logging:
   level:
     root: ${LOG_LEVEL:INFO}
@@ -48,7 +50,7 @@ kubernetes:
 starlight:
   features:
     publisherCheck: ${STARLIGHT_FEATURE_PUBLISHER_CHECK:true}
-    schemaValidation: ${STARLIGHT_FEATURE_SCHEMA_VALIDATION:true}
+    schemaValidation: ${STARLIGHT_FEATURE_SCHEMA_VALIDATION:false}
   security:
     # Must be lower-case and comma-separated, can be regex
     headerPropagationBlacklist: ${STARLIGHT_HEADER_PROPAGATION_BLACKLIST:x-spacegate-token,authorization,content-length,host,accept.*,x-forwarded.*,cookie}
@@ -64,10 +66,12 @@ starlight:
     redis:
       enabled: ${STARLIGHT_REPORTING_REDIS_ENABLED:false}
 
+# only used for schema validation (not yet possible as OSS for starlight)
 eniapi:
   baseurl: ${ENIAPI_BASEURL:localhost:8080}
   refreshInterval: ${ENIAPI_REFRESHINTERVAL:30000}
 
+# only used for schema validation (not yet possible as OSS for starlight)
 oidc:
   issuerUrl: ${IRIS_ISSUER_URL:https://iris.example.com/auth/realms/default/protocol/openid-connect/token}
   clientId: ${CLIENT_ID:foo}
