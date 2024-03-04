@@ -56,6 +56,24 @@ oidc:
   clientSecret: bar
 ```
 
+## Building Starlight
+
+### Gradle build
+
+```bash
+./gradlew build
+```
+
+### Docker build
+
+The default docker base image is `azul/zulu-openjdk-alpine:21-jre`. This is customizable via the docker build arg `DOCKER_BASE_IMAGE`.
+Please note that the default helm values configure the kafka compression type `snappy` whose dependencies have to be available in the result image.
+So either provide a base image with snappy installed or change/disable the compression type in the helm values.
+
+```bash
+docker build -t horizon-starlight:latest --build-arg="DOCKER_BASE_IMAGE=<myjvmbaseimage:1.0.0>" . 
+```
+
 ## Running Starlight
 ### Locally
 Before you can run Starlight locally you must have a running instance of Kafka and ENI API locally or forwarded from a remote cluster.
@@ -63,7 +81,7 @@ Additionally, you need to have a Kubernetes config at `${user.home}/.kube/config
 
 After that you can run Starlight in a dev mode using this command:
 ```shell
-./gradlew bootRun --args='--spring.profiles.active=dev,publisher-mock'
+./gradlew bootRun --args='--spring.profiles.active=publisher-mock'
 ```
 
 ## Code of Conduct
