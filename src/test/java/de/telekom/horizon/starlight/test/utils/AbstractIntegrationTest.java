@@ -90,7 +90,6 @@ public abstract class AbstractIntegrationTest {
         registry.add("horizon.kafka.autoCreateTopics", () -> true);
         registry.add("horizon.cache.kubernetesServiceDns", () -> "");
         registry.add("kubernetes.enabled", () -> false);
-        registry.add("horizon.victorialog.enabled", () -> false);
         registry.add("starlight.security.oauth", () -> false);
         registry.add("starlight.reporting.redis.enabled", () -> false);
         registry.add("spring.data.redis.url", () -> String.format("redis://%s:%d", redisContainer.getHost(), redisContainer.getFirstMappedPort()));
