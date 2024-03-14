@@ -19,8 +19,13 @@ SPDX-License-Identifier: Apache-2.0
   <a href="#running-starlight">Running Starlight</a>
 </p>
 
+<!--
+[![REUSE status](https://api.reuse.software/badge/github.com/telekom/pubsub-horizon-starlight)](https://api.reuse.software/info/github.com/telekom/pubsub-horizon-starlight)
+-->
+[![Gradle Build and Test](https://github.com/telekom/pubsub-horizon-starlight/actions/workflows/gradle-build.yml/badge.svg)](https://github.com/telekom/pubsub-horizon-starlight/actions/workflows/gradle-build.yml)
+
 ## Overview
-Horizon's Starlight provides a REST endpoint allowing event providers to publish events. Its responsibilities include event acceptance, authentication/authorization, schema validation (optional), and publishing to Horizon's underlying message broker (Kafka).
+Horizon's Starlight provides a REST endpoint allowing event providers to publish events. Its responsibilities include event acceptance, authentication/authorization, schema validation (optional), and publishing to [Horizon's](https://github.com/telekom/pubsub-horizon) underlying message broker (Kafka).
 
 We welcome and appreciate contributions from the developer community. Check our [contributing guide](LINK_TO_CONTRIBUTING_GUIDE.md) to get started!
 
@@ -64,14 +69,20 @@ oidc:
 ./gradlew build
 ```
 
-### Docker build
-
 The default docker base image is `azul/zulu-openjdk-alpine:21-jre`. This is customizable via the docker build arg `DOCKER_BASE_IMAGE`.
-Please note that the default helm values configure the kafka compression type `snappy` whose dependencies have to be available in the result image.
-So either provide a base image with snappy installed or change/disable the compression type in the helm values.
+Please note that the default helm values configure the kafka compression type `snappy` which requires gcompat to be installed in the resulting image.
+So either provide a base image with gcompat installed or change/disable the compression type in the helm values.
 
 ```bash
-docker build -t horizon-starlight:latest --build-arg="DOCKER_BASE_IMAGE=<myjvmbaseimage:1.0.0>" . 
+docker build -t horizon-galaxy:latest --build-arg="DOCKER_BASE_IMAGE=<myjvmbaseimage:1.0.0>" . 
+```
+
+#### Multi-stage Docker build
+
+To simplify things, we have also added a mult-stage Dockerfile to the respository, which also handles the Java build of the application in a build container. The resulting image already contains "gcompat", which is necessary for Kafka compression.
+
+```bash
+docker build -t horizon-galaxy:latest . -f Dockerfile.multi-stage 
 ```
 
 ## Running Starlight
@@ -84,11 +95,15 @@ After that you can run Starlight in a dev mode using this command:
 ./gradlew bootRun --args='--spring.profiles.active=publisher-mock'
 ```
 
+## Contributing
+
+We're committed to open source, so we welcome and encourage everyone to join its developer community and contribute, whether it's through code or feedback.  
+By participating in this project, you agree to abide by its [Code of Conduct](./CODE_OF_CONDUCT.md) at all times.
+
+
 ## Code of Conduct
 
 This project has adopted the [Contributor Covenant](https://www.contributor-covenant.org/) in version 2.1 as our code of conduct. Please see the details in our [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). All contributors must abide by the code of conduct.
-
-By participating in this project, you agree to abide by its [Code of Conduct](./CODE_OF_CONDUCT.md) at all times.
 
 ## Licensing
 
