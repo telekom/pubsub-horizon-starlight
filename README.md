@@ -27,8 +27,6 @@ SPDX-License-Identifier: Apache-2.0
 ## Overview
 Horizon's Starlight provides a REST endpoint allowing event providers to publish events. Its responsibilities include event acceptance, authentication/authorization, schema validation (optional), and publishing to [Horizon's](https://github.com/telekom/pubsub-horizon) underlying message broker (Kafka).
 
-We welcome and appreciate contributions from the developer community. Check our [contributing guide](LINK_TO_CONTRIBUTING_GUIDE.md) to get started!
-
 ## Prerequisites
 For the optimal setup, ensure you have:
 
@@ -74,7 +72,7 @@ Please note that the default helm values configure the kafka compression type `s
 So either provide a base image with gcompat installed or change/disable the compression type in the helm values.
 
 ```bash
-docker build -t horizon-galaxy:latest --build-arg="DOCKER_BASE_IMAGE=<myjvmbaseimage:1.0.0>" . 
+docker build -t horizon-starligh:latest --build-arg="DOCKER_BASE_IMAGE=<myjvmbaseimage:1.0.0>" . 
 ```
 
 #### Multi-stage Docker build
@@ -82,7 +80,7 @@ docker build -t horizon-galaxy:latest --build-arg="DOCKER_BASE_IMAGE=<myjvmbasei
 To simplify things, we have also added a mult-stage Dockerfile to the respository, which also handles the Java build of the application in a build container. The resulting image already contains "gcompat", which is necessary for Kafka compression.
 
 ```bash
-docker build -t horizon-galaxy:latest . -f Dockerfile.multi-stage 
+docker build -t horizon-starligh:latest . -f Dockerfile.multi-stage 
 ```
 
 ## Running Starlight
