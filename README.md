@@ -85,7 +85,7 @@ docker build -t horizon-starlight:latest . -f Dockerfile.multi-stage
 
 ## Running Starlight
 ### Locally
-Before you can run Starlight locally you must have a running instance of Kafka and ENI API locally or forwarded from a remote cluster.
+Before you can run Starlight locally you must have a running instance of Kafka locally or forwarded from a remote cluster.
 Additionally, you need to have a Kubernetes config at `${user.home}/.kube/config.main` that points to the cluster you want to use.
 
 After that you can run Starlight in a dev mode using this command:
