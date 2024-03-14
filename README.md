@@ -72,7 +72,7 @@ Please note that the default helm values configure the kafka compression type `s
 So either provide a base image with gcompat installed or change/disable the compression type in the helm values.
 
 ```bash
-docker build -t horizon-starligh:latest --build-arg="DOCKER_BASE_IMAGE=<myjvmbaseimage:1.0.0>" . 
+docker build -t horizon-starlight:latest --build-arg="DOCKER_BASE_IMAGE=<myjvmbaseimage:1.0.0>" . 
 ```
 
 #### Multi-stage Docker build
@@ -80,7 +80,7 @@ docker build -t horizon-starligh:latest --build-arg="DOCKER_BASE_IMAGE=<myjvmbas
 To simplify things, we have also added a mult-stage Dockerfile to the respository, which also handles the Java build of the application in a build container. The resulting image already contains "gcompat", which is necessary for Kafka compression.
 
 ```bash
-docker build -t horizon-starligh:latest . -f Dockerfile.multi-stage 
+docker build -t horizon-starlight:latest . -f Dockerfile.multi-stage 
 ```
 
 ## Running Starlight
