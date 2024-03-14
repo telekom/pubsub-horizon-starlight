@@ -15,6 +15,7 @@ SPDX-License-Identifier: Apache-2.0
 
 <p align="center">
   <a href="#prerequisites">Prerequisites</a> •
+  <a href="#building-starlight">Building Starlight</a> •
   <a href="#configuration">Configuration</a> •
   <a href="#running-starlight">Running Starlight</a>
 </p>
@@ -32,6 +33,30 @@ For the optimal setup, ensure you have:
 
 - A running instance of Kafka
 - Access to a Kubernetes cluster on which the `Subscription` (subscriber.horizon.telekom.de) custom resource definition has been registered
+
+## Building Starlight
+
+### Gradle build
+
+```bash
+./gradlew build
+```
+
+The default docker base image is `azul/zulu-openjdk-alpine:21-jre`. This is customizable via the docker build arg `DOCKER_BASE_IMAGE`.
+Please note that the default helm values configure the kafka compression type `snappy` which requires gcompat to be installed in the resulting image.
+So either provide a base image with gcompat installed or change/disable the compression type in the helm values.
+
+```bash
+docker build -t horizon-starlight:latest --build-arg="DOCKER_BASE_IMAGE=<myjvmbaseimage:1.0.0>" . 
+```
+
+#### Multi-stage Docker build
+
+To simplify things, we have also added a mult-stage Dockerfile to the respository, which also handles the Java build of the application in a build container. The resulting image already contains "gcompat", which is necessary for Kafka compression.
+
+```bash
+docker build -t horizon-starlight:latest . -f Dockerfile.multi-stage 
+```
 
 ## Configuration
 Starlight configuration is managed through environment variables. Check the [complete list](docs/environment-variables.md) of supported environment variables for setup instructions.
@@ -59,33 +84,9 @@ oidc:
   clientSecret: bar
 ```
 
-## Building Starlight
-
-### Gradle build
-
-```bash
-./gradlew build
-```
-
-The default docker base image is `azul/zulu-openjdk-alpine:21-jre`. This is customizable via the docker build arg `DOCKER_BASE_IMAGE`.
-Please note that the default helm values configure the kafka compression type `snappy` which requires gcompat to be installed in the resulting image.
-So either provide a base image with gcompat installed or change/disable the compression type in the helm values.
-
-```bash
-docker build -t horizon-starlight:latest --build-arg="DOCKER_BASE_IMAGE=<myjvmbaseimage:1.0.0>" . 
-```
-
-#### Multi-stage Docker build
-
-To simplify things, we have also added a mult-stage Dockerfile to the respository, which also handles the Java build of the application in a build container. The resulting image already contains "gcompat", which is necessary for Kafka compression.
-
-```bash
-docker build -t horizon-starlight:latest . -f Dockerfile.multi-stage 
-```
-
 ## Running Starlight
 ### Locally
-Before you can run Starlight locally you must have a running instance of Kafka locally or forwarded from a remote cluster.
+Before you can run Starlight locally you must have a running instance of Kafka  locally or forwarded from a remote cluster.
 Additionally, you need to have a Kubernetes config at `${user.home}/.kube/config.main` that points to the cluster you want to use.
 
 After that you can run Starlight in a dev mode using this command:
