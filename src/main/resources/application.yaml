@@ -10,6 +10,12 @@ spring:
       url: ${STARLIGHT_REPORTING_REDIS_URL}
   main:
     banner-mode: off
+  lifecycle:
+    timeout-per-shutdown-phase: ${STARLIGHT_PUBLISHING_TIMEOUT_MS:30000}ms
+
+server:
+  shutdown: graceful
+
 logging:
   level:
     root: ${LOG_LEVEL:INFO}
