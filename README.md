@@ -28,6 +28,8 @@ SPDX-License-Identifier: Apache-2.0
 ## Overview
 Horizon's Starlight provides a REST endpoint allowing event providers to publish events. Its responsibilities include event acceptance, authentication/authorization, schema validation (optional), and publishing to [Horizon's](https://github.com/telekom/pubsub-horizon) underlying message broker (Kafka).
 
+> **Note:** Starlight is an essential part of the Horizon ecosystem. Please refer to [documentation of the entire system](https://github.com/telekom/pubsub-horizon) to get the full picture.
+
 ## Prerequisites
 For the optimal setup, ensure you have:
 
