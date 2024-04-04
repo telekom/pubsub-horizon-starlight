@@ -7,8 +7,6 @@ package de.telekom.horizon.starlight.api;
 import de.telekom.eni.pandora.horizon.model.common.ProblemMessage;
 import de.telekom.horizon.starlight.exception.*;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.http.*;
 import org.springframework.lang.Nullable;
 import org.springframework.security.core.AuthenticationException;
@@ -25,13 +23,6 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
 
     public static final String HORIZON_PUBLISH_EVENTS_DOC_URL = "https://developer.telekom.de/docs/src/tardis_customer_handbook/horizon/step-by-step-guide/Publish_Events/#sending-events";
     public static final String DEFAULT_ERROR_TITLE = "Something went wrong.";
-
-    private final ApplicationContext applicationContext;
-
-    @Autowired
-    public RestResponseEntityExceptionHandler(ApplicationContext applicationContext) {
-        this.applicationContext = applicationContext;
-    }
 
     // 202 Accepted
     @ExceptionHandler(value = {
@@ -141,7 +132,6 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
 
         var message = new ProblemMessage(HORIZON_PUBLISH_EVENTS_DOC_URL, title);
         message.setStatus(status.value());
-        message.setInstance(applicationContext.getId());
 
         if (StringUtils.hasText(detail)) {
             message.setDetail(detail);
