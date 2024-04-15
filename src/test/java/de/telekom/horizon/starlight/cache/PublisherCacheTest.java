@@ -4,6 +4,7 @@
 
 package de.telekom.horizon.starlight.cache;
 
+import de.telekom.eni.pandora.horizon.common.exception.HorizonException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,11 +32,12 @@ class PublisherCacheTest {
     @BeforeEach
     void setup() {
         publisherCache = new PublisherCache();
+        publisherCache.setHealthy();
     }
 
     @Test
     @DisplayName("Publisher ID can be written to cache and can be read from it again")
-    void publisherIdCanBeWrittenAndRead() {
+    void publisherIdCanBeWrittenAndRead() throws HorizonException {
         assertThat(publisherCache.get(DEFAULT_ENVIRONMENT, EVENT_TYPE), is(empty()));
         publisherCache.add(DEFAULT_ENVIRONMENT, EVENT_TYPE, SUBSCRIPTION_ID, Set.of(PUBLISHER_ID));
         assertThat(publisherCache.get(DEFAULT_ENVIRONMENT, EVENT_TYPE), is(equalTo(Set.of(PUBLISHER_ID))));
@@ -43,7 +45,7 @@ class PublisherCacheTest {
 
     @Test
     @DisplayName("Publisher ID can be removed from the cache")
-    void publisherIdCanBeRemovedFromCache() {
+    void publisherIdCanBeRemovedFromCache() throws HorizonException {
         publisherCache.add(DEFAULT_ENVIRONMENT, EVENT_TYPE, SUBSCRIPTION_ID, Set.of(PUBLISHER_ID));
         assertThat(publisherCache.get(DEFAULT_ENVIRONMENT, EVENT_TYPE), is(notNullValue()));
         publisherCache.remove(DEFAULT_ENVIRONMENT, EVENT_TYPE, SUBSCRIPTION_ID);
@@ -52,7 +54,7 @@ class PublisherCacheTest {
 
     @Test
     @DisplayName("Publisher ID cannot be retrieved from cache for non-existing event type")
-    void publisherIdIsNullForInvalidEventType() {
+    void publisherIdIsNullForInvalidEventType() throws HorizonException {
         publisherCache.add(DEFAULT_ENVIRONMENT, EVENT_TYPE, SUBSCRIPTION_ID, Set.of(PUBLISHER_ID));
         assertThat(publisherCache.get(DEFAULT_ENVIRONMENT, EVENT_TYPE), is(notNullValue()));
         assertThat(publisherCache.get(DEFAULT_ENVIRONMENT, "something.different.v1"), is(empty()));
@@ -60,7 +62,7 @@ class PublisherCacheTest {
 
     @Test
     @DisplayName("Publisher ID cannot be removed for non-existing event type")
-    void publisherIdCannotBeRemovedForInvalidEventType() {
+    void publisherIdCannotBeRemovedForInvalidEventType() throws HorizonException {
         publisherCache.add(DEFAULT_ENVIRONMENT, EVENT_TYPE, SUBSCRIPTION_ID, Set.of(PUBLISHER_ID));
         assertThat(publisherCache.get(DEFAULT_ENVIRONMENT, EVENT_TYPE), is(notNullValue()));
         publisherCache.remove(DEFAULT_ENVIRONMENT, "something.different.v1", SUBSCRIPTION_ID);
@@ -69,7 +71,7 @@ class PublisherCacheTest {
 
     @Test
     @DisplayName("Publisher ID will not be removed if there are still subscribers")
-    void publisherIdWillNotBeRemovedWithMultipleSubscribers() {
+    void publisherIdWillNotBeRemovedWithMultipleSubscribers() throws HorizonException {
         assertThat(publisherCache.get(DEFAULT_ENVIRONMENT, EVENT_TYPE), is(empty()));
 
         publisherCache.add(DEFAULT_ENVIRONMENT, EVENT_TYPE, SUBSCRIPTION_ID, Set.of(PUBLISHER_ID2));

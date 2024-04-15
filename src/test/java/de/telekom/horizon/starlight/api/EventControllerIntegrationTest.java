@@ -51,6 +51,7 @@ class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @BeforeEach
     public void beforeEach() {
         publisherCache.clear();
+        publisherCache.setHealthy();
     }
 
     @Test

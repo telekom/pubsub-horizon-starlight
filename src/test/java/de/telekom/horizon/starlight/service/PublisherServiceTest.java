@@ -7,6 +7,7 @@ package de.telekom.horizon.starlight.service;
 import brave.ScopedSpan;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.telekom.eni.pandora.horizon.autoconfigure.kafka.KafkaAutoConfiguration;
+import de.telekom.eni.pandora.horizon.common.exception.HorizonException;
 import de.telekom.eni.pandora.horizon.kafka.config.KafkaProperties;
 import de.telekom.eni.pandora.horizon.kubernetes.SubscriptionResourceListener;
 import de.telekom.eni.pandora.horizon.metrics.HorizonMetricsHelper;
@@ -90,7 +91,7 @@ class PublisherServiceTest {
     }
 
     @Test
-    void verifySubscriptionResourceListenerIsStarted() {
+    void verifySubscriptionResourceListenerIsStarted() throws HorizonException {
         publisherService.init();
         verify(subscriptionResourceListener, times(1)).start();
     }
@@ -98,7 +99,7 @@ class PublisherServiceTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @DisplayName("Event can be published successfully")
-    void eventMessageCanBePublishedSuccessfully(boolean isEnablePublisherCheck) {
+    void eventMessageCanBePublishedSuccessfully(boolean isEnablePublisherCheck) throws HorizonException {
         var offset = 0L;
         var partition = 0;
 
@@ -129,14 +130,14 @@ class PublisherServiceTest {
     }
     @Test
     @DisplayName("Event cannot be published due to a publisherId mismatch or an empty publisherId")
-    void eventMessageCanBePublishedWithInvalidPublisherIdWhenCheckIsDisabled() {
+    void eventMessageCanBePublishedWithInvalidPublisherIdWhenCheckIsDisabled() throws HorizonException {
         eventMessageCannotBePublishedDueToAPublisherIdMismatch(null);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"an--invalid--publisherId", ""})
     @DisplayName("Event cannot be published due to a publisherId mismatch or an empty publisherId")
-    void eventMessageCannotBePublishedDueToAPublisherIdMismatch(String publisherId) {
+    void eventMessageCannotBePublishedDueToAPublisherIdMismatch(String publisherId) throws HorizonException {
         var offset = 0L;
         var partition = 0;
 
@@ -156,7 +157,7 @@ class PublisherServiceTest {
 
     @Test
     @DisplayName("Event cannot be published due to unknown event type or no subscriptions")
-    void eventMessageCannotBePublishedDueToUnknownEventTypeOrNoSubscriptions() {
+    void eventMessageCannotBePublishedDueToUnknownEventTypeOrNoSubscriptions() throws HorizonException {
         var offset = 0L;
         var partition = 0;
 
@@ -176,7 +177,7 @@ class PublisherServiceTest {
 
     @Test
     @DisplayName("Event cannot be published due to unknown event type or no subscriptions")
-    void eventMessageCannotBePublishedDueToCouldNotPublishEventMessageException() {
+    void eventMessageCannotBePublishedDueToCouldNotPublishEventMessageException() throws HorizonException {
         var offset = 0L;
         var partition = 0;
 

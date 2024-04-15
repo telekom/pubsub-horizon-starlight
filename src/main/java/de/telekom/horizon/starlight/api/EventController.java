@@ -4,9 +4,9 @@
 
 package de.telekom.horizon.starlight.api;
 
+import de.telekom.eni.pandora.horizon.common.exception.HorizonException;
 import de.telekom.eni.pandora.horizon.model.event.Event;
 import de.telekom.eni.pandora.horizon.tracing.HorizonTracer;
-import de.telekom.horizon.starlight.exception.HorizonStarlightException;
 import de.telekom.horizon.starlight.service.PublisherService;
 import de.telekom.horizon.starlight.service.TokenService;
 import de.telekom.horizon.starlight.service.reporting.ReportingService;
@@ -55,7 +55,7 @@ public class EventController {
     @PostMapping(value = { "/events", "/events/" }, consumes = {MediaType.APPLICATION_JSON_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
     public ResponseEntity<Event> publishEvent(@RequestBody Event event,
                                               @PathVariable String environment,
-                                              @RequestHeader MultiValueMap<String, String> httpHeaders) throws HorizonStarlightException {
+                                              @RequestHeader MultiValueMap<String, String> httpHeaders) throws HorizonException {
         addTracingTags(event);
 
         publisherService.checkRealm(tokenService.getRealm(), environment);

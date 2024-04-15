@@ -6,7 +6,11 @@ package de.telekom.horizon.starlight.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.telekom.eni.pandora.horizon.common.exception.HorizonException;
+import de.telekom.eni.pandora.horizon.exception.CouldNotStartInformerException;
+import de.telekom.eni.pandora.horizon.exception.UnhealthyCacheException;
 import de.telekom.eni.pandora.horizon.kafka.event.EventWriter;
+import de.telekom.eni.pandora.horizon.kubernetes.ListenerEvent;
 import de.telekom.eni.pandora.horizon.kubernetes.SubscriptionResourceListener;
 import de.telekom.eni.pandora.horizon.metrics.AdditionalFields;
 import de.telekom.eni.pandora.horizon.metrics.HorizonMetricsHelper;
@@ -24,6 +28,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.common.errors.RecordTooLargeException;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringApplication;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.event.EventListener;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
@@ -31,7 +38,6 @@ import org.springframework.util.MultiValueMap;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import static de.telekom.eni.pandora.horizon.metrics.HorizonMetricsConstants.METRIC_PUBLISHED_EVENTS;
 
@@ -41,6 +47,8 @@ import static de.telekom.eni.pandora.horizon.metrics.HorizonMetricsConstants.MET
 @Service
 @Slf4j
 public class PublisherService {
+
+    private final ApplicationContext applicationContext;
 
     private final SubscriptionResourceListener subscriptionResourceListener;
 
@@ -74,7 +82,7 @@ public class PublisherService {
      * @param validator                     the validator used for validating the event's fields
      */
     public PublisherService(
-            @Autowired(required = false) SubscriptionResourceListener subscriptionResourceListener,
+            ApplicationContext applicationContext, @Autowired(required = false) SubscriptionResourceListener subscriptionResourceListener,
             PublisherCache publisherCache,
             StarlightConfig starlightConfig,
             SchemaValidationService schemaValidationService,
@@ -83,6 +91,7 @@ public class PublisherService {
             EventWriter eventWriter,
             Validator validator
     ) {
+        this.applicationContext = applicationContext;
         this.subscriptionResourceListener = subscriptionResourceListener;
         this.publisherCache = publisherCache;
         this.starlightConfig = starlightConfig;
@@ -97,9 +106,31 @@ public class PublisherService {
     @PostConstruct
     public void init() {
         if (subscriptionResourceListener != null) {
-            subscriptionResourceListener.start();
+            try {
+                subscriptionResourceListener.start();
+            } catch (CouldNotStartInformerException e) {
+                log.error(e.getMessage(), e);
+                SpringApplication.exit(applicationContext, () -> 1);
+            }
         }
     }
+
+    @EventListener
+    public void handleSubscriptionResourceListenerEvent(ListenerEvent e) {
+        if (e.getType() == ListenerEvent.Type.SUBSCRIPTION_RESOURCE_LISTENER) {
+            switch (e.getEvent()) {
+                case INFORMER_STARTED -> {
+                    log.info("Received INFORMER_STARTED event from SubscriptionResourceListener.");
+                    publisherCache.setHealthy();
+                }
+                case INFORMER_STOPPED -> {
+                    log.error("Received INFORMER_STOPPED event from SubscriptionResourceListener, terminating.");
+                    SpringApplication.exit(applicationContext, () -> 2);
+                }
+            }
+        }
+    }
+
 
     /**
      * Checks if the provided realm matches the environment.
@@ -149,7 +180,7 @@ public class PublisherService {
      *
      */
     public void publish(Event event, String publisherId, String environment,
-                        MultiValueMap<String, String> httpHeaders) throws HorizonStarlightException {
+                        MultiValueMap<String, String> httpHeaders) throws HorizonException {
 
 
         if (starlightConfig.isEnablePublisherCheck()) {
@@ -241,7 +272,7 @@ public class PublisherService {
      * @throws PublisherDoesNotMatchEventTypeException if the publisher ID does not match the event type
      * @throws UnknownEventTypeOrNoSubscriptionException if the event type could not be found or there are no subscribers
      */
-    private void checkEventTypeOwnership(String environment, String eventType, String publisherId) throws PublisherDoesNotMatchEventTypeException, UnknownEventTypeOrNoSubscriptionException {
+    private void checkEventTypeOwnership(String environment, String eventType, String publisherId) throws PublisherDoesNotMatchEventTypeException, UnknownEventTypeOrNoSubscriptionException, UnhealthyCacheException {
         var publisherIdFromCache = publisherCache.get(environment, eventType);
 
         var currentSpan = Optional.ofNullable(tracer.getCurrentSpan());

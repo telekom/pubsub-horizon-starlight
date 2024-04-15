@@ -4,6 +4,7 @@
 
 package de.telekom.horizon.starlight.cache;
 
+import de.telekom.eni.pandora.horizon.exception.UnhealthyCacheException;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Component;
@@ -13,16 +14,23 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Component
 public class PublisherCache {
+
+    private final AtomicBoolean healthy = new AtomicBoolean(false);
 
     //<Environment, EventType> -> Set<PublisherId>
     private final Map<Pair<String, String>, Set<String>> pubCache = new ConcurrentHashMap<>();
     //<Environment, EventType> -> Set<SubscriptionId>
     private final Map<Pair<String, String>, Set<String>> subCache = new ConcurrentHashMap<>();
 
-    public Set<String> get(String environment, String eventType) {
+    public Set<String> get(String environment, String eventType) throws UnhealthyCacheException {
+        if (!isHealthy()) {
+            throw new UnhealthyCacheException("PublisherCache is in unhealthy state.");
+        }
+
         var key = new ImmutablePair<>(environment, eventType);
         return pubCache.getOrDefault(key, Collections.emptySet());
     }
@@ -55,5 +63,13 @@ public class PublisherCache {
     public void clear() {
         pubCache.clear();
         subCache.clear();
+    }
+
+    public boolean isHealthy() {
+        return healthy.get();
+    }
+
+    public void setHealthy() {
+        healthy.compareAndExchange(false, true);
     }
 }
