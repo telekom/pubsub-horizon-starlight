@@ -87,7 +87,7 @@ dependencies {
 
     // optional
     if (!schemalValidationImplDependency.allWhitespace) {
-        implementation "${schemalValidationImplDependency}"
+        //implementation "${schemalValidationImplDependency}"
     }
 
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'

@@ -8,7 +8,6 @@ import brave.ScopedSpan;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.telekom.eni.pandora.horizon.autoconfigure.kafka.KafkaAutoConfiguration;
 import de.telekom.eni.pandora.horizon.kafka.config.KafkaProperties;
-import de.telekom.eni.pandora.horizon.kubernetes.SubscriptionResourceListener;
 import de.telekom.eni.pandora.horizon.metrics.HorizonMetricsHelper;
 import de.telekom.eni.pandora.horizon.model.event.Event;
 import de.telekom.eni.pandora.horizon.model.event.PublishedEventMessage;
@@ -61,8 +60,6 @@ class PublisherServiceTest {
     private static final String DEFAULT_PUBLISHER_ID = TokenServiceMockImpl.MOCKED_PUBLISHER_ID;
     private static final String DEFAULT_TOPIC = "published";
 
-    @MockBean
-    SubscriptionResourceListener subscriptionResourceListener;
     @MockBean(name = "kafkaTemplate")
     KafkaTemplate<String, String> kafkaTemplate;
     @MockBean
@@ -89,12 +86,6 @@ class PublisherServiceTest {
         assertThat(publisherService, notNullValue());
     }
 
-    @Test
-    void verifySubscriptionResourceListenerIsStarted() {
-        publisherService.init();
-        verify(subscriptionResourceListener, times(1)).start();
-    }
-
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     @DisplayName("Event can be published successfully")
@@ -107,7 +98,7 @@ class PublisherServiceTest {
 
         when(starlightConfig.isEnablePublisherCheck()).thenReturn(isEnablePublisherCheck);
         when(starlightConfig.getPublishingTopic()).thenReturn("published");
-        when(publisherCache.get(DEFAULT_ENVIRONMENT, event.getType())).thenReturn(Set.of(DEFAULT_PUBLISHER_ID));
+        when(publisherCache.findPublisherIds(DEFAULT_ENVIRONMENT, event.getType())).thenReturn(Set.of(DEFAULT_PUBLISHER_ID));
         when(tracer.startScopedDebugSpan(anyString())).thenReturn(scopedDebugSpanWrapper);
 
         var counterMock = Mockito.mock(Counter.class);
@@ -124,7 +115,7 @@ class PublisherServiceTest {
             publisherService.publish(event, DEFAULT_PUBLISHER_ID, DEFAULT_ENVIRONMENT, null);
         });
 
-        verify(publisherCache, times(isEnablePublisherCheck ? 1 : 0)).get(DEFAULT_ENVIRONMENT, message.getEvent().getType());
+        verify(publisherCache, times(isEnablePublisherCheck ? 1 : 0)).findPublisherIds(DEFAULT_ENVIRONMENT, message.getEvent().getType());
         verify(kafkaTemplate).send(any(ProducerRecord.class));
     }
     @Test
@@ -144,7 +135,7 @@ class PublisherServiceTest {
         var message = new PublishedEventMessage(event, DEFAULT_ENVIRONMENT);
 
         when(starlightConfig.isEnablePublisherCheck()).thenReturn(true);
-        when(publisherCache.get(DEFAULT_ENVIRONMENT, message.getEvent().getType())).thenReturn(Set.of(DEFAULT_PUBLISHER_ID));
+        when(publisherCache.findPublisherIds(DEFAULT_ENVIRONMENT, message.getEvent().getType())).thenReturn(Set.of(DEFAULT_PUBLISHER_ID));
 
         assertThrows(PublisherDoesNotMatchEventTypeException.class, () -> {
             applyKafkaStubs(DEFAULT_TOPIC, offset, partition, message);
@@ -164,7 +155,7 @@ class PublisherServiceTest {
         var message = new PublishedEventMessage(event, DEFAULT_ENVIRONMENT);
 
         when(starlightConfig.isEnablePublisherCheck()).thenReturn(true);
-        when(publisherCache.get(DEFAULT_ENVIRONMENT, message.getEvent().getType())).thenReturn(null);
+        when(publisherCache.findPublisherIds(DEFAULT_ENVIRONMENT, message.getEvent().getType())).thenReturn(new HashSet<>());
 
         assertThrows(UnknownEventTypeOrNoSubscriptionException.class, () -> {
             applyKafkaStubs(DEFAULT_TOPIC, offset, partition, message);
@@ -185,7 +176,7 @@ class PublisherServiceTest {
 
         when(starlightConfig.isEnablePublisherCheck()).thenReturn(true);
         when(starlightConfig.getPublishingTopic()).thenReturn("published");
-        when(publisherCache.get(DEFAULT_ENVIRONMENT, event.getType())).thenReturn(Set.of(DEFAULT_PUBLISHER_ID));
+        when(publisherCache.findPublisherIds(DEFAULT_ENVIRONMENT, event.getType())).thenReturn(Set.of(DEFAULT_PUBLISHER_ID));
         when(tracer.startScopedDebugSpan(anyString())).thenReturn(scopedDebugSpanWrapper);
 
         var counterMock = Mockito.mock(Counter.class);
