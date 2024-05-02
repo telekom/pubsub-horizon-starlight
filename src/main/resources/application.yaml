@@ -74,6 +74,9 @@ oidc:
   clientSecret: ${CLIENT_SECRET:bar}
 
 horizon:
+  cache:
+    enabled: true
+    kubernetesServiceDns: ${COMET_CACHE_SERVICE_DNS:app-cache-headless.example.svc.cluster.local}
   kafka:
     bootstrapServers: ${STARLIGHT_KAFKA_BROKERS:kafka:9092}
     transactionIdPrefix: ${STARLIGHT_KAFKA_TRANSACTION_PREFIX:starlight}
