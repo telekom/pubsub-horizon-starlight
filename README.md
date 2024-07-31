@@ -34,7 +34,7 @@ Horizon's Starlight provides a REST endpoint allowing event providers to publish
 For the optimal setup, ensure you have:
 
 - A running instance of Kafka
-- Access to a Kubernetes cluster on which the `Subscription` (subscriber.horizon.telekom.de) custom resource definition has been registered
+- A running instance of Horizon's config server (codename: Quasar)
 
 ## Building Starlight
 
@@ -90,8 +90,8 @@ oidc:
 
 ## Running Starlight
 ### Locally
-Before you can run Starlight locally you must have a running instance of Kafka  locally or forwarded from a remote cluster.
-Additionally, you need to have a Kubernetes config at `${user.home}/.kube/config.main` that points to the cluster you want to use.
+Before you can run Starlight locally you must have a running instance of Kafka locally or forwarded from a remote cluster.
+Additionally, you need to have a running instance of Horizon's config server locally (codename: Quasar).
 
 After that you can run Starlight in a dev mode using this command:
 ```shell

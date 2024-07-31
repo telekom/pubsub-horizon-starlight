@@ -4,17 +4,16 @@
 
 package de.telekom.horizon.starlight.api;
 
-import de.telekom.eni.pandora.horizon.kubernetes.SubscriptionResourceListener;
 import de.telekom.eni.pandora.horizon.model.event.Event;
 import de.telekom.eni.pandora.horizon.tracing.HorizonTracer;
 import de.telekom.horizon.starlight.config.StarlightConfig;
 import de.telekom.horizon.starlight.config.rest.WebSecurityConfig;
 import de.telekom.horizon.starlight.exception.*;
-import de.telekom.horizon.starlight.service.reporting.RedisReportingService;
 import de.telekom.horizon.starlight.service.PublisherService;
 import de.telekom.horizon.starlight.service.SchemaValidationService;
 import de.telekom.horizon.starlight.service.TokenService;
 import de.telekom.horizon.starlight.service.impl.TokenServiceMockImpl;
+import de.telekom.horizon.starlight.service.reporting.RedisReportingService;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import lombok.SneakyThrows;
@@ -60,8 +59,6 @@ class EventControllerTest {
     StarlightConfig starlightConfig;
     @MockBean
     KafkaTemplate<String, String> kafkaTemplate;
-    @MockBean
-    SubscriptionResourceListener subscriptionResourceListener;
     @MockBean
     JwtDecoder jwtDecoder;
     @MockBean

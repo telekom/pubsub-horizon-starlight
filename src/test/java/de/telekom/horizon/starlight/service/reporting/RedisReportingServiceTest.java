@@ -4,6 +4,8 @@
 
 package de.telekom.horizon.starlight.service.reporting;
 
+import de.telekom.eni.pandora.horizon.cache.service.JsonCacheService;
+import de.telekom.eni.pandora.horizon.kubernetes.resource.SubscriptionResource;
 import de.telekom.eni.pandora.horizon.model.event.Event;
 import de.telekom.horizon.starlight.test.utils.EmbeddedKafkaHolder;
 import de.telekom.horizon.starlight.test.utils.HorizonTestHelper;
@@ -11,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.test.EmbeddedKafkaBroker;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -28,6 +31,9 @@ import static org.junit.jupiter.api.Assertions.*;
 @AutoConfigureMockMvc
 @Testcontainers
 class RedisReportingServiceTest {
+
+    @MockBean
+    JsonCacheService<SubscriptionResource> subscriptionCache;
 
     public static final GenericContainer<?> redisContainer;
     public static final EmbeddedKafkaBroker broker;

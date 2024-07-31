@@ -4,56 +4,62 @@
 
 package de.telekom.horizon.starlight.cache;
 
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
+import de.telekom.eni.pandora.horizon.cache.service.JsonCacheService;
+import de.telekom.eni.pandora.horizon.cache.util.Query;
+import de.telekom.eni.pandora.horizon.exception.JsonCacheException;
+import de.telekom.eni.pandora.horizon.kubernetes.resource.SubscriptionResource;
+import de.telekom.horizon.starlight.config.StarlightConfig;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.Map;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 @Component
 public class PublisherCache {
 
-    //<Environment, EventType> -> Set<PublisherId>
-    private final Map<Pair<String, String>, Set<String>> pubCache = new ConcurrentHashMap<>();
-    //<Environment, EventType> -> Set<SubscriptionId>
-    private final Map<Pair<String, String>, Set<String>> subCache = new ConcurrentHashMap<>();
+    private final StarlightConfig starlightConfig;
 
-    public Set<String> get(String environment, String eventType) {
-        var key = new ImmutablePair<>(environment, eventType);
-        return pubCache.getOrDefault(key, Collections.emptySet());
+    private final JsonCacheService<SubscriptionResource> subscriptionCache;
+
+    public PublisherCache(StarlightConfig starlightConfig, JsonCacheService<SubscriptionResource> subscriptionCache) {
+        this.starlightConfig = starlightConfig;
+        this.subscriptionCache = subscriptionCache;
     }
 
-    public void add(String environment, String eventType, String subscriptionId, Set<String> publisherIds) {
-        var key = new ImmutablePair<>(environment, eventType);
-
-        pubCache.put(key, publisherIds);
-        subCache.putIfAbsent(key, new HashSet<>());
-        subCache.get(key).add(subscriptionId);
-    }
-
-    public void remove(String environment, String eventType, String subscriptionId) {
-        var key = new ImmutablePair<>(environment, eventType);
-
-        var subscribers = subCache.get(key);
-
-        if(subscribers == null) {
-            return;
+    public Set<String> findPublisherIds(String environment, String eventType) {
+        var env = environment;
+        if (Objects.equals(starlightConfig.getDefaultEnvironment(), environment)) {
+            env = "default";
         }
 
-        subscribers.remove(subscriptionId);
+        var builder = Query.builder(SubscriptionResource.class)
+                .addMatcher("spec.environment", env)
+                .addMatcher("spec.subscription.type", eventType);
 
-        if(subscribers.isEmpty()) {
-            subCache.remove(key);
-            pubCache.remove(key);
+        List<SubscriptionResource> list;
+        try {
+            list = subscriptionCache.getQuery(builder.build());
+        } catch (JsonCacheException e) {
+            log.error("Error occurred while executing query on JsonCacheService", e);
+
+            return new HashSet<>();
         }
-    }
 
-    public void clear() {
-        pubCache.clear();
-        subCache.clear();
+        var publisherIds = new HashSet<String>();
+
+        list.forEach(a -> {
+            publisherIds.add(a.getSpec().getSubscription().getPublisherId());
+
+            var additionalPublisherIds = a.getSpec().getSubscription().getAdditionalPublisherIds();
+            if (additionalPublisherIds != null) {
+                publisherIds.addAll(additionalPublisherIds);
+            }
+        });
+
+        return publisherIds;
     }
 }

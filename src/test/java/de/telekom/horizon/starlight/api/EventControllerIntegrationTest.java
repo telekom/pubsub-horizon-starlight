@@ -9,7 +9,7 @@ import de.telekom.eni.pandora.horizon.metrics.AdditionalFields;
 import de.telekom.eni.pandora.horizon.model.event.Event;
 import de.telekom.eni.pandora.horizon.model.event.PublishedEventMessage;
 import de.telekom.horizon.starlight.cache.PublisherCache;
-import de.telekom.horizon.starlight.service.impl.TokenServiceMockImpl;
+import de.telekom.horizon.starlight.service.TokenService;
 import de.telekom.horizon.starlight.service.reporting.ReportingService;
 import de.telekom.horizon.starlight.test.utils.AbstractIntegrationTest;
 import de.telekom.horizon.starlight.test.utils.HorizonTestHelper;
@@ -17,20 +17,19 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -39,27 +38,30 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("publisher-mock")
 class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    @MockBean
+    PublisherCache publisherCache;
+
+    @SpyBean
+    TokenService tokenService;
 
     @Autowired
-    private PublisherCache publisherCache;
+    private ObjectMapper objectMapper;
 
     @SpyBean
     private ReportingService reportingService;
 
+    private static final String DEFAULT_PUBLISHER = "eni--pandora--foobar";
+
     @BeforeEach
-    public void beforeEach() {
-        publisherCache.clear();
+    void init() {
+        when(tokenService.getPublisherId()).thenReturn(DEFAULT_PUBLISHER);
     }
 
     @Test
     void testProduceSimpleEvent() throws Exception {
+        when(publisherCache.findPublisherIds(any(), any())).thenReturn(Set.of(DEFAULT_PUBLISHER));
         // given
         Event newEvent = HorizonTestHelper.createNewEvent();
-
-        publisherCache.add("integration", newEvent.getType(), TokenServiceMockImpl.MOCKED_PUBLISHER_ID, Set.of(TokenServiceMockImpl.MOCKED_PUBLISHER_ID));
-
         // when
         mockMvc.perform(
                 post("/v1/integration/events")
@@ -90,10 +92,10 @@ class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void testProduceSimpleEventAndCheckRedisReport() throws Exception {
+        when(publisherCache.findPublisherIds(any(), any())).thenReturn(Set.of(DEFAULT_PUBLISHER));
+
         // given
         Event newEvent = HorizonTestHelper.createNewEvent();
-
-        publisherCache.add("integration", newEvent.getType(), TokenServiceMockImpl.MOCKED_PUBLISHER_ID, Set.of(TokenServiceMockImpl.MOCKED_PUBLISHER_ID));
 
         // when
         mockMvc.perform(
@@ -126,6 +128,8 @@ class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void testProduceWithoutSubscription() throws Exception {
+        when(publisherCache.findPublisherIds(any(), any())).thenReturn(new HashSet<>());
+
         // given
         Event newEvent = HorizonTestHelper.createNewEvent();
 
@@ -144,8 +148,6 @@ class EventControllerIntegrationTest extends AbstractIntegrationTest {
         // given
         Event newEvent = HorizonTestHelper.createNewInvalidEvent();
 
-        publisherCache.add("integration", newEvent.getType(), TokenServiceMockImpl.MOCKED_PUBLISHER_ID, Set.of(TokenServiceMockImpl.MOCKED_PUBLISHER_ID));
-
         // when / then
         mockMvc.perform(
                 post("/v1/integration/events")
@@ -160,8 +162,6 @@ class EventControllerIntegrationTest extends AbstractIntegrationTest {
     void testInvalidReamProduceEvent() throws Exception {
         // given
         Event newEvent = HorizonTestHelper.createNewInvalidEvent();
-
-        publisherCache.add("integration", newEvent.getType(), TokenServiceMockImpl.MOCKED_PUBLISHER_ID, Set.of(TokenServiceMockImpl.MOCKED_PUBLISHER_ID));
 
         // when / then
         mockMvc.perform(

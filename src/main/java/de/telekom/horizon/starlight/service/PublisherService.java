@@ -7,7 +7,6 @@ package de.telekom.horizon.starlight.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.telekom.eni.pandora.horizon.kafka.event.EventWriter;
-import de.telekom.eni.pandora.horizon.kubernetes.SubscriptionResourceListener;
 import de.telekom.eni.pandora.horizon.metrics.AdditionalFields;
 import de.telekom.eni.pandora.horizon.metrics.HorizonMetricsHelper;
 import de.telekom.eni.pandora.horizon.model.event.Event;
@@ -17,13 +16,11 @@ import de.telekom.eni.pandora.horizon.tracing.HorizonTracer;
 import de.telekom.horizon.starlight.cache.PublisherCache;
 import de.telekom.horizon.starlight.config.StarlightConfig;
 import de.telekom.horizon.starlight.exception.*;
-import jakarta.annotation.PostConstruct;
 import jakarta.validation.Validator;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.common.errors.RecordTooLargeException;
-import org.apache.logging.log4j.util.Strings;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
@@ -31,7 +28,6 @@ import org.springframework.util.MultiValueMap;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import static de.telekom.eni.pandora.horizon.metrics.HorizonMetricsConstants.METRIC_PUBLISHED_EVENTS;
 
@@ -41,8 +37,6 @@ import static de.telekom.eni.pandora.horizon.metrics.HorizonMetricsConstants.MET
 @Service
 @Slf4j
 public class PublisherService {
-
-    private final SubscriptionResourceListener subscriptionResourceListener;
 
     private final PublisherCache publisherCache;
 
@@ -64,7 +58,6 @@ public class PublisherService {
     /**
      * Creates a new PublisherService.
      *
-     * @param subscriptionResourceListener  the subscription resource listener
      * @param publisherCache                the publisher cache
      * @param starlightConfig               the configuration for this service
      * @param schemaValidationService       the schema validation service
@@ -74,7 +67,6 @@ public class PublisherService {
      * @param validator                     the validator used for validating the event's fields
      */
     public PublisherService(
-            @Autowired(required = false) SubscriptionResourceListener subscriptionResourceListener,
             PublisherCache publisherCache,
             StarlightConfig starlightConfig,
             SchemaValidationService schemaValidationService,
@@ -83,7 +75,6 @@ public class PublisherService {
             EventWriter eventWriter,
             Validator validator
     ) {
-        this.subscriptionResourceListener = subscriptionResourceListener;
         this.publisherCache = publisherCache;
         this.starlightConfig = starlightConfig;
         this.schemaValidationService = schemaValidationService;
@@ -92,13 +83,6 @@ public class PublisherService {
         this.eventWriter = eventWriter;
         this.validator = validator;
         this.objectMapper = new ObjectMapper();
-    }
-
-    @PostConstruct
-    public void init() {
-        if (subscriptionResourceListener != null) {
-            subscriptionResourceListener.start();
-        }
     }
 
     /**
@@ -242,17 +226,17 @@ public class PublisherService {
      * @throws UnknownEventTypeOrNoSubscriptionException if the event type could not be found or there are no subscribers
      */
     private void checkEventTypeOwnership(String environment, String eventType, String publisherId) throws PublisherDoesNotMatchEventTypeException, UnknownEventTypeOrNoSubscriptionException {
-        var publisherIdFromCache = publisherCache.get(environment, eventType);
+        var publisherIds = publisherCache.findPublisherIds(environment, eventType);
 
         var currentSpan = Optional.ofNullable(tracer.getCurrentSpan());
 
-        if (publisherIdFromCache == null || publisherIdFromCache.isEmpty()) {
+        if (publisherIds == null || publisherIds.isEmpty()) {
             currentSpan.ifPresent(s -> tracer.addTagsToSpan(s, List.of(
                     Pair.of("isValidEventType", "false")
             )));
 
             throw new UnknownEventTypeOrNoSubscriptionException(String.format("The event type %s could not be found. It either has not been exposed yet or there are no subscribers'", eventType));
-        } else if (Strings.isBlank(publisherId) || !publisherIdFromCache.contains(publisherId)) {
+        } else if (StringUtils.isBlank(publisherId) || !publisherIds.contains(publisherId)) {
             currentSpan.ifPresent(s -> tracer.addTagsToSpan(s, List.of(
                     Pair.of("isValidPublisher", "false")
             )));
