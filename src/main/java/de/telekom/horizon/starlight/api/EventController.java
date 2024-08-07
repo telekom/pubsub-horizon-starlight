@@ -61,6 +61,8 @@ public class EventController {
         publisherService.checkRealm(tokenService.getRealm(), environment);
         publisherService.validateEvent(event);
         publisherService.checkPayloadSize(event);
+
+        log.warn("PublisherId from tokenService: {}", tokenService.getPublisherId());
         publisherService.publish(event, tokenService.getPublisherId(), environment, httpHeaders);
 
         reportingService.markEventProduced(event);

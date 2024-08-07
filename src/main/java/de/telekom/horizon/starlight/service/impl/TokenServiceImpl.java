@@ -6,6 +6,7 @@ package de.telekom.horizon.starlight.service.impl;
 
 import de.telekom.horizon.starlight.service.TokenService;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
@@ -18,6 +19,7 @@ import java.util.regex.Pattern;
 
 @Profile("!publisher-mock")
 @Service
+@Slf4j
 public class TokenServiceImpl implements TokenService {
 
     private final HttpServletRequest request;
@@ -45,7 +47,11 @@ public class TokenServiceImpl implements TokenService {
             return null;
         }
 
+        log.warn("ClientId from token is: {}", token.getClaimAsString("clientId"));
+        log.warn("azp from token is: {}", token.getClaimAsString("azp"));
+
         return Optional.ofNullable(token.getClaimAsString("clientId")).orElseGet(() -> token.getClaimAsString("azp"));
+
     }
 
     @Override
