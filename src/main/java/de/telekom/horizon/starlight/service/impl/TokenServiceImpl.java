@@ -19,7 +19,6 @@ import java.util.regex.Pattern;
 
 @Profile("!publisher-mock")
 @Service
-@Slf4j
 public class TokenServiceImpl implements TokenService {
 
     private final HttpServletRequest request;
@@ -47,11 +46,10 @@ public class TokenServiceImpl implements TokenService {
             return null;
         }
 
-        log.warn("ClientId from token is: {}", token.getClaimAsString("clientId"));
-        log.warn("azp from token is: {}", token.getClaimAsString("azp"));
+        var claim = Optional.ofNullable(token.getClaimAsString("clientId")).orElseGet(() -> token.getClaimAsString("azp"));
+        System.out.println("Claim is: " + claim);
 
-        return Optional.ofNullable(token.getClaimAsString("clientId")).orElseGet(() -> token.getClaimAsString("azp"));
-
+        return claim;
     }
 
     @Override

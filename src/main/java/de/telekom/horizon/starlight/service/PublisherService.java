@@ -241,8 +241,10 @@ public class PublisherService {
                     Pair.of("isValidPublisher", "false")
             )));
 
-            log.warn("Publisher with id '{}' does not match event type '{}'", publisherId, eventType);
-            log.warn("Publisher ids: {}", publisherIds);
+            if (publisherId != null) {
+                log.warn("Publisher with id '{}' does not match event type '{}'", publisherId, eventType);
+                log.warn("Publisher ids: {}", publisherIds);
+            }
 
             throw new PublisherDoesNotMatchEventTypeException(String.format("The event type does not belong to publisher with id '%s'", publisherId));
         }
