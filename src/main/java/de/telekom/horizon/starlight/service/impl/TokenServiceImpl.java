@@ -46,7 +46,7 @@ public class TokenServiceImpl implements TokenService {
             return null;
         }
 
-        var claim = Optional.ofNullable(token.getClaimAsString("clientId")).orElseGet(() -> token.getClaimAsString("azp"));
+        var claim = Optional.ofNullable(token.getClaimAsString("client_id")).orElseGet(() -> token.getClaimAsString("azp"));
         System.out.println("Claim is: " + claim);
 
         return claim;
