@@ -48,14 +48,14 @@ class TokenServiceTest {
     @Test
     @DisplayName("Publisher ID can be retrieved from clientId claim of token")
     void publisherIdCanBeRetrievedFromClientIdTokenClaim() {
-        var jwtSpy = Mockito.spy(createNewJwtForPublisherId(Map.of("clientId", DEFAULT_PUBLISHER_ID, "azp", DEFAULT_PUBLISHER_ID, JwtClaimNames.ISS, DEFAULT_ISSUER_URL)));
+        var jwtSpy = Mockito.spy(createNewJwtForPublisherId(Map.of("client_id", DEFAULT_PUBLISHER_ID, "azp", DEFAULT_PUBLISHER_ID, JwtClaimNames.ISS, DEFAULT_ISSUER_URL)));
         var principal = new JwtAuthenticationToken(jwtSpy);
 
         when(httpServletRequest.getUserPrincipal()).thenReturn(principal);
         assertThat(tokenService.getPublisherId(), is(equalTo(DEFAULT_PUBLISHER_ID)));
         assertThat(tokenService.getRealm(), is(equalTo("av")));
 
-        verify(jwtSpy, times(1)).getClaimAsString("clientId");
+        verify(jwtSpy, times(1)).getClaimAsString("client_id");
         verify(jwtSpy, times(0)).getClaimAsString("azp");
     }
 
@@ -68,7 +68,7 @@ class TokenServiceTest {
         when(httpServletRequest.getUserPrincipal()).thenReturn(principal);
         assertThat(tokenService.getPublisherId(), is(equalTo(DEFAULT_PUBLISHER_ID)));
 
-        verify(jwtSpy, times(1)).getClaimAsString("clientId");
+        verify(jwtSpy, times(1)).getClaimAsString("client_id");
         verify(jwtSpy, times(1)).getClaimAsString("azp");
     }
 
