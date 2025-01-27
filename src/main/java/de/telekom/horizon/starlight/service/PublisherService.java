@@ -16,12 +16,16 @@ import de.telekom.eni.pandora.horizon.tracing.HorizonTracer;
 import de.telekom.horizon.starlight.cache.PublisherCache;
 import de.telekom.horizon.starlight.config.StarlightConfig;
 import de.telekom.horizon.starlight.exception.*;
+import jakarta.annotation.PreDestroy;
 import jakarta.validation.Validator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.common.errors.RecordTooLargeException;
+import org.springframework.boot.SpringApplication;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.http.HttpHeaders;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
@@ -40,7 +44,7 @@ public class PublisherService {
 
     private final PublisherCache publisherCache;
 
-    private final StarlightConfig starlightConfig;
+    private final StarlightConfig config;
 
     private final SchemaValidationService schemaValidationService;
 
@@ -54,34 +58,39 @@ public class PublisherService {
 
     private final ObjectMapper objectMapper;
 
+    private final ConfigurableApplicationContext context;
+
 
     /**
      * Creates a new PublisherService.
      *
      * @param publisherCache                the publisher cache
-     * @param starlightConfig               the configuration for this service
+     * @param config               the configuration for this service
      * @param schemaValidationService       the schema validation service
      * @param tracer                        the tracer used for debug information
      * @param metricsHelper                 the metrics helper for updating metrics
      * @param eventWriter                   the writer for publishing events
      * @param validator                     the validator used for validating the event's fields
+     * @param context                       The application context.
      */
     public PublisherService(
             PublisherCache publisherCache,
-            StarlightConfig starlightConfig,
+            StarlightConfig config,
             SchemaValidationService schemaValidationService,
             HorizonTracer tracer,
             HorizonMetricsHelper metricsHelper,
             EventWriter eventWriter,
-            Validator validator
+            Validator validator,
+            ConfigurableApplicationContext context
     ) {
         this.publisherCache = publisherCache;
-        this.starlightConfig = starlightConfig;
+        this.config = config;
         this.schemaValidationService = schemaValidationService;
         this.tracer = tracer;
         this.metricsHelper = metricsHelper;
         this.eventWriter = eventWriter;
         this.validator = validator;
+        this.context = context;
         this.objectMapper = new ObjectMapper();
     }
 
@@ -95,7 +104,7 @@ public class PublisherService {
      * @throws RealmDoesNotMatchEnvironmentException if the realm does not match the environment.
      */
     public void checkRealm(String realm, String environment) throws RealmDoesNotMatchEnvironmentException {
-        if (Objects.equals(starlightConfig.getDefaultEnvironment(), environment)) {
+        if (Objects.equals(config.getDefaultEnvironment(), environment)) {
             environment = "default";
         }
 
@@ -136,11 +145,11 @@ public class PublisherService {
                         MultiValueMap<String, String> httpHeaders) throws HorizonStarlightException {
 
 
-        if (starlightConfig.isEnablePublisherCheck()) {
+        if (config.isEnablePublisherCheck()) {
             checkEventTypeOwnership(environment, event.getType(), publisherId);
         }
 
-        if(starlightConfig.isEnableSchemaValidation()) {
+        if(config.isEnableSchemaValidation()) {
             schemaValidationService.validate(event, environment, publisherId);
         }
 
@@ -160,7 +169,7 @@ public class PublisherService {
             tracer.addTagsToSpan(span, List.of(Pair.of("publisherId", publisherId)));
 
             span.annotate("send message to kafka");
-            eventWriter.send(starlightConfig.getPublishingTopic(), message, tracer).get(this.starlightConfig.getStarlightTimeout(), TimeUnit.MILLISECONDS);
+            eventWriter.send(config.getPublishingTopic(), message, tracer).get(this.config.getStarlightTimeout(), TimeUnit.MILLISECONDS);
 
             span.annotate("export metrics");
             metricsHelper.getRegistry().counter(METRIC_PUBLISHED_EVENTS, metricsHelper.buildTagsFromPublishedEventMessage(message)).increment();
@@ -205,7 +214,7 @@ public class PublisherService {
 
         if (httpHeaders != null) {
             httpHeaders.forEach((k, v) -> {
-                if (starlightConfig.getHeaderPropagationBlacklist().stream().noneMatch(k::matches)) {
+                if (config.getHeaderPropagationBlacklist().stream().noneMatch(k::matches)) {
                     var unqiueValues = v.stream().distinct().toList();
                     unqiueValues.forEach(e -> filteredHeaders.add(k, e));
                 }
@@ -289,7 +298,7 @@ public class PublisherService {
      */
     public void checkPayloadSize(Event event) throws PayloadTooLargeException, InvalidEventBodyException {
         var currentSpan = Optional.ofNullable(tracer.getCurrentSpan());
-        if (starlightConfig.getPayloadCheckExemptionList().contains(event.getType())) {
+        if (config.getPayloadCheckExemptionList().contains(event.getType())) {
             currentSpan.ifPresent(s -> tracer.addTagsToSpan(s, List.of(
                     Pair.of("exemptedFromPayloadPolicy", "true"),
                     Pair.of("matchesPayloadPolicy", "N/A")
@@ -299,7 +308,7 @@ public class PublisherService {
 
         try {
             long payloadSize = objectMapper.writeValueAsBytes(event.getData()).length;
-            if (payloadSize > starlightConfig.getDefaultMaxPayloadSize()) {
+            if (payloadSize > config.getDefaultMaxPayloadSize()) {
                 currentSpan.ifPresent(s -> tracer.addTagsToSpan(s, List.of(
                         Pair.of("matchesPayloadPolicy", "false")
                 )));
@@ -313,5 +322,46 @@ public class PublisherService {
         } catch (JsonProcessingException e) {
             throw new InvalidEventBodyException("Could not serialize event payload");
         }
+    }
+
+    /**
+     * Handles the requested termination of Horizon Starlight
+     * by waiting some time (shutdownWaitTimeSeconds) to ensure the pod has been deregistered in the load balancer
+     * before shutting down.
+     */
+    @PreDestroy
+    public void stopService() {
+        gracefulShutdown(() -> log.warn("Exiting application now"));
+    }
+
+    /**
+     * Handles the graceful shutdown of the application
+     *
+     * The method checks whether the application's context already has been closed. Depending on the outcome
+     * the shutdown will be handled either as expected or unexpected.
+     *
+     * @param action runnable action to be called before exiting
+     */
+    private void gracefulShutdown(@Nullable Runnable action) {
+        var isContextClosed = context.isClosed();
+
+        if (isContextClosed) {
+            log.warn("MessageListenerContainer stopped. Exiting application in {} seconds...", config.getShutdownWaitTimeSeconds());
+        } else {
+            log.error("MessageListenerContainer stopped unexpectedly. Exiting application in {} seconds...", config.getShutdownWaitTimeSeconds());
+        }
+
+        // wait for some time for ongoing tasks to finish
+        try {
+            Thread.sleep(Instant.ofEpochSecond(config.getShutdownWaitTimeSeconds()).toEpochMilli());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        if (action != null) {
+            action.run();
+        }
+
+        System.exit(SpringApplication.exit(context, () -> isContextClosed ? 0 : 1));
     }
 }

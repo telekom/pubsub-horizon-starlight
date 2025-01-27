@@ -14,6 +14,9 @@ import java.util.List;
 @Getter
 public class StarlightConfig {
 
+    @Value("${starlight.shutdownWaitTimeSeconds:30}")
+    private int shutdownWaitTimeSeconds;
+
     @Value("${starlight.features.publisherCheck:true}")
     private boolean enablePublisherCheck;
 

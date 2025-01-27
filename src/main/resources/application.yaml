@@ -11,7 +11,9 @@ spring:
   main:
     banner-mode: off
   lifecycle:
-    timeout-per-shutdown-phase: ${STARLIGHT_PUBLISHING_TIMEOUT_MS:30000}ms
+    # if we get a SIGTERM, still allow web server requests for x seconds to handle those requests that are sent
+    # while the pod is still registered in the load balancer after shutdown has been initiated
+    timeout-per-shutdown-phase: ${STARLIGHT_PUBLISHING_TIMEOUT_MS:30000}
 
 server:
   shutdown: graceful
