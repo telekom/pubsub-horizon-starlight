@@ -14,6 +14,7 @@ import de.telekom.horizon.starlight.service.SchemaValidationService;
 import de.telekom.horizon.starlight.service.TokenService;
 import de.telekom.horizon.starlight.service.impl.TokenServiceMockImpl;
 import de.telekom.horizon.starlight.service.reporting.RedisReportingService;
+import de.telekom.horizon.starlight.test.utils.HazelcastTestInstance;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import lombok.SneakyThrows;
@@ -42,7 +43,7 @@ import static de.telekom.horizon.starlight.test.utils.HorizonTestHelper.createNe
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(SpringExtension.class)
+@ExtendWith({SpringExtension.class, HazelcastTestInstance.class})
 @SpringBootTest(properties = {"starlight.features.publisherCheck=true"}, classes = StarlightConfig.class)
 @AutoConfigureMockMvc
 @EnableWebMvc

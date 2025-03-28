@@ -8,8 +8,10 @@ import de.telekom.eni.pandora.horizon.cache.service.JsonCacheService;
 import de.telekom.eni.pandora.horizon.kubernetes.resource.SubscriptionResource;
 import de.telekom.eni.pandora.horizon.model.event.Event;
 import de.telekom.horizon.starlight.test.utils.EmbeddedKafkaHolder;
+import de.telekom.horizon.starlight.test.utils.HazelcastTestInstance;
 import de.telekom.horizon.starlight.test.utils.HorizonTestHelper;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -30,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers
+@ExtendWith(HazelcastTestInstance.class)
 class RedisReportingServiceTest {
 
     @MockBean
