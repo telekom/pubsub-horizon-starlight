@@ -32,7 +32,6 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers
-@ExtendWith(HazelcastTestInstance.class)
 class RedisReportingServiceTest {
 
     @MockBean
