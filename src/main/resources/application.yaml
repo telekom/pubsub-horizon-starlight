@@ -36,7 +36,7 @@ management:
     redis:
       enabled: ${STARLIGHT_REPORTING_REDIS_ENABLED:false}
     hazelcast:
-      enabled: true
+      enabled: false
 
   zipkin:
     tracing:
