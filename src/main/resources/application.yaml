@@ -76,6 +76,8 @@ oidc:
   clientSecret: ${CLIENT_SECRET:bar}
 
 horizon:
+  monogo:
+    enabled: true
   cache:
     enabled: true
     kubernetesServiceDns: ${STARLIGHT_CACHE_SERVICE_DNS:horizon-quasar-discovery-headless.integration.svc.cluster.local}

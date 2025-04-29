@@ -38,4 +38,18 @@ public class StarlightConfig {
     @Value("#{'${starlight.payloadCheckExemptionList}'.split(',')}")
     private List<String> payloadCheckExemptionList;
 
+    @Value("${horizon.mongo.enabled:true}")
+    private boolean mongoEnabled;
+
+    @Value("${horizon.mongo.uri:mongodb://localhost:27017}")
+    private String mongoUri;
+
+    @Value("${horizon.mongo.db:horizon}")
+    private String mongoDb;
+
+    @Value("${horizon.mongo.collection:eventSubscriptions}")
+    private String mongoCollection;
+
+    
+
 }
