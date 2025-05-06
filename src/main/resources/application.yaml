@@ -78,8 +78,6 @@ oidc:
   clientSecret: ${CLIENT_SECRET:bar}
 
 horizon:
-  monogo:
-    enabled: true
   cache:
     enabled: true
     kubernetesServiceDns: ${STARLIGHT_CACHE_SERVICE_DNS:horizon-quasar-discovery-headless.integration.svc.cluster.local}
@@ -93,10 +91,10 @@ horizon:
       enabled: ${STARLIGHT_KAFKA_COMPRESSION_ENABLED:false}
       type: ${STARLIGHT_KAFKA_COMPRESSION_TYPE:none}
   mongo:
-    enabled: ${HORIZON_MONGO_ENABLED:true}
-    uri: ${HORIZON_MONGO_URI:mongodb://root:root@localhost:27017}
-    database: ${HORIZON_MONGO_DB:horizon}
-    collection: ${HORIZON_MONGO_COLLECTION:eventSubscriptions}
+    enabled: ${STARLIGHT_MONGO_ENABLED:true}
+    url: ${STARLIGHT_MONGO_URL:mongodb://root:root@localhost:27017}
+    database: ${STARLIGHT_MONGO_DB:horizon}
+    collection: ${STARLIGHT_MONGO_COLLECTION:eventSubscriptions}
 
 pandora:
   tracing:
