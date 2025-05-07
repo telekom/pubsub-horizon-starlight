@@ -14,7 +14,7 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication(exclude = {CacheMetricsAutoConfiguration.class, RedisAutoConfiguration.class})
+@SpringBootApplication(exclude = {CacheMetricsAutoConfiguration.class, MongoAutoConfiguration.class, RedisAutoConfiguration.class})
 //@EnableConfigurationProperties({RedisReportConfig.class})
 @EnableConfigurationProperties({MongoProperties.class})
 @ConfigurationPropertiesScan("de.telekom.horizon.starlight.config")
