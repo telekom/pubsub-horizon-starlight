@@ -93,7 +93,7 @@ horizon:
   mongo:
     enabled: ${STARLIGHT_MONGO_ENABLED:true}
     url: ${STARLIGHT_MONGO_URL:mongodb://root:root@localhost:27017}
-    database: ${STARLIGHT_MONGO_DB:horizon}
+    database: ${STARLIGHT_MONGO_DATABASE:horizon-config}
     collection: ${STARLIGHT_MONGO_COLLECTION:eventSubscriptions}
 
 pandora:
