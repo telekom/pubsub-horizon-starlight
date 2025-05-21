@@ -38,7 +38,6 @@ public class WebSecurityConfig {
     @Bean
     protected SecurityFilterChain gatesSecurityFilterChain(HttpSecurity http) throws Exception {
         log.info("configure security {}", (enableOauth ? "ON" : "OFF") );
-        log.warn("trusted issuers: {}", issuerUrls);
 
         http.csrf(AbstractHttpConfigurer::disable);
 
