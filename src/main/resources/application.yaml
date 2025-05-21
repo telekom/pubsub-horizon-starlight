@@ -35,6 +35,10 @@ management:
   health:
     redis:
       enabled: ${STARLIGHT_REPORTING_REDIS_ENABLED:false}
+    hazelcast:
+      enabled: false
+    mongo:
+      enabled: false
 
   zipkin:
     tracing:
@@ -86,6 +90,13 @@ horizon:
     compression:
       enabled: ${STARLIGHT_KAFKA_COMPRESSION_ENABLED:false}
       type: ${STARLIGHT_KAFKA_COMPRESSION_TYPE:none}
+  mongo:
+    enabled: ${STARLIGHT_MONGO_ENABLED:true}
+    url: ${STARLIGHT_MONGO_URL:mongodb://root:root@localhost:27017}
+    databases:
+      configTimeDatabase: ${STARLIGHT_MONGO_CONFIG_DATABASE:horizon-config}
+      runTimeDatabase: ${STARLIGHT_MONGO_RUNTIME_DATABASE:horizon}
+    collection: ${STARLIGHT_MONGO_COLLECTION:eventSubscriptions}
 
 pandora:
   tracing:

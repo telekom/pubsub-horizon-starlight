@@ -17,6 +17,7 @@ import de.telekom.horizon.starlight.cache.PublisherCache;
 import de.telekom.horizon.starlight.config.StarlightConfig;
 import de.telekom.horizon.starlight.exception.*;
 import de.telekom.horizon.starlight.service.impl.TokenServiceMockImpl;
+import de.telekom.horizon.starlight.test.utils.HazelcastTestInstance;
 import de.telekom.horizon.starlight.test.utils.HorizonTestHelper;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -28,6 +29,7 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
@@ -54,6 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest(classes = {PublisherService.class, KafkaAutoConfiguration.class, LocalValidatorFactoryBean.class})
+@ExtendWith(HazelcastTestInstance.class)
 class PublisherServiceTest {
 
     private static final String DEFAULT_ENVIRONMENT = "test";

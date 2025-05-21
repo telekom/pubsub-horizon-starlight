@@ -12,10 +12,12 @@ import de.telekom.horizon.starlight.cache.PublisherCache;
 import de.telekom.horizon.starlight.service.TokenService;
 import de.telekom.horizon.starlight.service.reporting.ReportingService;
 import de.telekom.horizon.starlight.test.utils.AbstractIntegrationTest;
+import de.telekom.horizon.starlight.test.utils.HazelcastTestInstance;
 import de.telekom.horizon.starlight.test.utils.HorizonTestHelper;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -36,6 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ActiveProfiles("publisher-mock")
+@ExtendWith(HazelcastTestInstance.class)
 class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @MockBean
