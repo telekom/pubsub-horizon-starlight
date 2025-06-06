@@ -51,6 +51,7 @@ starlight:
   features:
     publisherCheck: ${STARLIGHT_FEATURE_PUBLISHER_CHECK:true}
     schemaValidation: ${STARLIGHT_FEATURE_SCHEMA_VALIDATION:false}
+    enforceSchemaValidation: ${STARLIGHT_FEATURE_ENFORCE_SCHEMA_VALIDATION:false}
   security:
     # Must be lower-case and comma-separated, can be regex
     headerPropagationBlacklist: ${STARLIGHT_HEADER_PROPAGATION_BLACKLIST:x-spacegate-token,authorization,content-length,host,accept.*,x-forwarded.*,cookie}
