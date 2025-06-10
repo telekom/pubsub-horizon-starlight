@@ -89,14 +89,6 @@ public class SchemaValidationService {
             } catch (JsonProcessingException | JSONException e) {
                 log.info(String.format("Event of type %s is no valid json.", event.getType()));
 
-                if (!starlightConfig.isEnforceSchemaValidation()) {
-                    log.warn("Schema validation is not enforced, ignoring invalid schema for event type {} in event {}", event.getType(), event.getId());
-                    metricsHelper.getRegistry()
-                            .counter(HorizonMetricsConstants.METRIC_SCHEMA_VALIDATION_FAILURES, "event_type", event.getType(), "publisher_id", publisherId)
-                            .increment();
-                    return;
-                }
-
                 throw new EventNotCompliantWithSchemaException(String.format("Event of type %s is no valid json.",
                         event.getType()), e);
             }
