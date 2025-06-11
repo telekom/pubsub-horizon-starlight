@@ -4,10 +4,13 @@
 
 package de.telekom.horizon.starlight.service;
 
+import de.telekom.eni.pandora.horizon.metrics.HorizonMetricsHelper;
 import de.telekom.eni.pandora.horizon.model.event.Event;
 import de.telekom.eni.pandora.horizon.schema.SchemaStore;
 import de.telekom.eni.pandora.horizon.tracing.HorizonTracer;
+import de.telekom.horizon.starlight.config.StarlightConfig;
 import de.telekom.horizon.starlight.exception.EventNotCompliantWithSchemaException;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import lombok.Getter;
 import lombok.Setter;
 import org.everit.json.schema.Schema;
@@ -43,6 +46,12 @@ class SchemeValidationServiceTest {
     @Mock
     HorizonTracer tracer;
 
+    @Mock
+    HorizonMetricsHelper metricsHelper;
+
+    @Mock
+    StarlightConfig starlightConfig;
+
     @InjectMocks
     SchemaValidationService schemaValidationService;
 
@@ -52,12 +61,32 @@ class SchemeValidationServiceTest {
     void isValidTest(int specificationType, boolean withCorrectData, boolean shouldThrow) {
         when(schemaStore.getSchemaForEventType(anyString(), anyString(), anyString(), anyString())).thenReturn(generateSchemes(specificationType));
         Event event = generateEvent(withCorrectData);
+        boolean validSchema = specificationType == 1;
 
         if (shouldThrow) {
+            if (validSchema) {
+                when(starlightConfig.isEnforceSchemaValidation()).thenReturn(true);
+                when(metricsHelper.getRegistry()).thenReturn(new SimpleMeterRegistry());
+            }
             assertThrows(EventNotCompliantWithSchemaException.class, () -> schemaValidationService.validate(event, ENV_MOCK, PUB_ID_MOCK));
         } else {
+            if (validSchema) {
+                when(metricsHelper.getRegistry()).thenReturn(new SimpleMeterRegistry());
+            }
             assertDoesNotThrow(() -> schemaValidationService.validate(event, ENV_MOCK, PUB_ID_MOCK));
         }
+    }
+
+    @Test
+    @DisplayName("isValid should return true when schemas are not enforced")
+    void shouldReturnTrueWhenSchemasAreNotEnforced() {
+        Event event = generateEvent(true);
+        when(schemaStore.getSchemaForEventType(anyString(), anyString(), anyString(), anyString())).thenReturn(generateSchemes(1));
+
+        assertDoesNotThrow(() -> {
+            when(metricsHelper.getRegistry()).thenReturn(new SimpleMeterRegistry());
+            schemaValidationService.validate(event, ENV_MOCK, PUB_ID_MOCK);
+        });
     }
 
     @Test
