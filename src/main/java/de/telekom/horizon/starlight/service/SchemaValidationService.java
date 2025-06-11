@@ -107,7 +107,7 @@ public class SchemaValidationService {
                         event.getType(), event.getId()));
 
                 metricsHelper.getRegistry()
-                        .counter(HorizonMetricsConstants.METRIC_SCHEMA_VALIDATION_FAILURES, "event_type", event.getType(), "publisher_id", publisherId)
+                        .counter(HorizonMetricsConstants.METRIC_SCHEMA_VALIDATION_FAILURE, "event_type", event.getType(), "publisher_id", publisherId)
                         .increment();
 
                 if (!starlightConfig.isEnforceSchemaValidation()) {
