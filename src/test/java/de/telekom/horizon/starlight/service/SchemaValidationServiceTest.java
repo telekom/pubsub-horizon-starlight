@@ -36,7 +36,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class SchemeValidationServiceTest {
+class SchemaValidationServiceTest {
 
     public static final String PUB_ID_MOCK = "pub--id--mock";
     public static final String ENV_MOCK = "mock";
