@@ -49,7 +49,7 @@ repositories {
 
 ext {
     // this is internal, overwrite with your specific implementation if you want
-    schemalValidationImplDependency = System.getenv('ADDITIONAL_SCHEMASTORE_IMPL') ?: System.getProperty("schemaStoreImplMavenDependency") ?: ""
+    schemaValidationImplDependency = System.getenv('ADDITIONAL_SCHEMASTORE_IMPL') ?: System.getProperty("schemaStoreImplMavenDependency") ?: ""
 }
 
 dependencies {
@@ -86,8 +86,8 @@ dependencies {
     implementation "de.telekom.eni:horizon-spring-boot-starter:${horizonParentVersion}"
 
     // optional
-    if (!schemalValidationImplDependency.allWhitespace) {
-        //implementation "${schemalValidationImplDependency}"
+    if (!schemaValidationImplDependency.allWhitespace) {
+        implementation "${schemaValidationImplDependency}"
     }
 
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'

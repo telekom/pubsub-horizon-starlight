@@ -6,9 +6,12 @@ package de.telekom.horizon.starlight.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.telekom.eni.pandora.horizon.metrics.HorizonMetricsConstants;
+import de.telekom.eni.pandora.horizon.metrics.HorizonMetricsHelper;
 import de.telekom.eni.pandora.horizon.model.event.Event;
 import de.telekom.eni.pandora.horizon.schema.SchemaStore;
 import de.telekom.eni.pandora.horizon.tracing.HorizonTracer;
+import de.telekom.horizon.starlight.config.StarlightConfig;
 import de.telekom.horizon.starlight.exception.EventNotCompliantWithSchemaException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
@@ -33,11 +36,17 @@ public class SchemaValidationService {
 
     private final SchemaStore schemaStore;
 
+    private final StarlightConfig starlightConfig;
+
+    private final HorizonMetricsHelper metricsHelper;
+
     private final HorizonTracer tracer;
 
     @Autowired
-    public SchemaValidationService(SchemaStore schemaStore, HorizonTracer tracer) {
+    public SchemaValidationService(SchemaStore schemaStore, StarlightConfig starlightConfig, HorizonMetricsHelper metricsHelper, HorizonTracer tracer) {
         this.schemaStore = schemaStore;
+        this.starlightConfig = starlightConfig;
+        this.metricsHelper = metricsHelper;
         this.tracer = tracer;
     }
 
@@ -79,6 +88,7 @@ public class SchemaValidationService {
                 jsonEvent = new JSONObject(new ObjectMapper().writeValueAsString(event.getData()));
             } catch (JsonProcessingException | JSONException e) {
                 log.info(String.format("Event of type %s is no valid json.", event.getType()));
+
                 throw new EventNotCompliantWithSchemaException(String.format("Event of type %s is no valid json.",
                         event.getType()), e);
             }
@@ -86,11 +96,25 @@ public class SchemaValidationService {
             try {
                 schemaCacheInstance.validate(jsonEvent);
                 currentSpan.ifPresent(s -> tracer.addTagsToSpan(s, List.of(Pair.of("isMatchingSchema", "true"))));
+                metricsHelper.getRegistry()
+                        .counter(HorizonMetricsConstants.METRIC_SCHEMA_VALIDATION_SUCCESS, "event_type", event.getType(), "publisher_id", publisherId)
+                        .increment();
+
             } catch (ValidationException ex) {
                 currentSpan.ifPresent(s -> tracer.addTagsToSpan(s, List.of(Pair.of("isMatchingSchema", "false"))));
 
                 log.info(String.format("Event of type %s with id %s does not comply with the given schema.",
                         event.getType(), event.getId()));
+
+                metricsHelper.getRegistry()
+                        .counter(HorizonMetricsConstants.METRIC_SCHEMA_VALIDATION_FAILURE, "event_type", event.getType(), "publisher_id", publisherId)
+                        .increment();
+
+                if (!starlightConfig.isEnforceSchemaValidation()) {
+                    log.warn("Schema validation is not enforced, skipping compliance check for event of type {} with id {}", event.getType(), event.getId());
+                    return;
+                }
+
                 throw new EventNotCompliantWithSchemaException(String.format("Event of type %s with id %s does not comply with the given schema.",
                         event.getType(), event.getId()), ex);
             }
