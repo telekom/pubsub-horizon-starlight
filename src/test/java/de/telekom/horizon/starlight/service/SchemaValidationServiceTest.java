@@ -58,7 +58,7 @@ class SchemaValidationServiceTest {
 
     @ParameterizedTest
     @MethodSource("provideParameters")
-    @DisplayName("isValid should return true when event complies with scheme")
+    @DisplayName("return when event complies with scheme and throws when it does not")
     void isValidTest(int specificationType, boolean withCorrectData, boolean shouldThrow) {
         when(schemaStore.getSchemaForEventType(anyString(), anyString(), anyString(), anyString())).thenReturn(generateSchemes(specificationType));
         Event event = generateEvent(withCorrectData);
@@ -79,8 +79,8 @@ class SchemaValidationServiceTest {
     }
 
     @Test
-    @DisplayName("isValid should return true when schemas are not enforced")
-    void shouldReturnTrueWhenSchemasAreNotEnforced() {
+    @DisplayName("return when schemas are not enforced")
+    void shouldReturnWhenSchemasAreNotEnforced() {
         Event event = generateEvent(true);
         when(schemaStore.getSchemaForEventType(anyString(), anyString(), anyString(), anyString())).thenReturn(generateSchemes(1));
 
@@ -91,8 +91,8 @@ class SchemaValidationServiceTest {
     }
 
     @Test
-    @DisplayName("isValid should return true when no specification is given")
-    void shouldReturnTrueWhenNoSpecIsGiven() {
+    @DisplayName("return when no specification is given")
+    void shouldReturnWhenNoSpecIsGiven() {
         when(schemaStore.getSchemaForEventType(anyString(), anyString(), anyString(), anyString())).thenReturn(null);
         Event event = generateEvent(true);
 
@@ -100,8 +100,8 @@ class SchemaValidationServiceTest {
     }
 
     @Test
-    @DisplayName("isValid should return false when event data is no valid json but the dataContentType suggest otherwise")
-    void shouldReturnFalseWhenEventDataIsNoValidJson() {
+    @DisplayName("throw when event data isn't valid json but the dataContentType suggests otherwise")
+    void shouldReturnWhenEventDataIsNoValidJson() {
         when(schemaStore.getSchemaForEventType(anyString(), anyString(), anyString(), anyString())).thenReturn(generateSchemes(1));
 
         // Validate an event with data that is valid json but uses a json suffix in its dataContentType
@@ -116,6 +116,14 @@ class SchemaValidationServiceTest {
         {
             Event event = generateEvent(true);
             event.setDataContentType(MediaType.APPLICATION_JSON_VALUE);
+            event.setData("<optional JSON scheme>");
+
+            assertThrows(EventNotCompliantWithSchemaException.class, () -> schemaValidationService.validate(event, ENV_MOCK, PUB_ID_MOCK));
+        }
+
+        // Validate an event with data that is not valid JSON but without specifically setting dataContentType.
+        {
+            Event event = generateEvent(true);
             event.setData("<optional JSON scheme>");
 
             assertThrows(EventNotCompliantWithSchemaException.class, () -> schemaValidationService.validate(event, ENV_MOCK, PUB_ID_MOCK));
