@@ -21,7 +21,9 @@ import org.everit.json.schema.ValidationException;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MimeType;
 
 import java.util.List;
 import java.util.Optional;
@@ -82,6 +84,12 @@ public class SchemaValidationService {
         Schema schemaCacheInstance = schemaStore.getSchemaForEventType(environment, event.getType(), splitPubId[0], splitPubId[1]);
         if (schemaCacheInstance != null) {
             var currentSpan = Optional.ofNullable(tracer.getCurrentSpan());
+
+            var dataContentType = Optional.ofNullable(event.getDataContentType());
+            var mimeType = MimeType.valueOf(dataContentType.orElse(MediaType.APPLICATION_JSON_VALUE));
+            if (!mimeType.includes(MediaType.APPLICATION_JSON)) {
+                return;
+            }
 
             JSONObject jsonEvent;
             try {

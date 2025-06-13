@@ -26,6 +26,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.MediaType;
 
 import java.util.stream.Stream;
 
@@ -57,7 +58,7 @@ class SchemaValidationServiceTest {
 
     @ParameterizedTest
     @MethodSource("provideParameters")
-    @DisplayName("isValid should return true when event complies with scheme")
+    @DisplayName("return when event complies with scheme and throws when it does not")
     void isValidTest(int specificationType, boolean withCorrectData, boolean shouldThrow) {
         when(schemaStore.getSchemaForEventType(anyString(), anyString(), anyString(), anyString())).thenReturn(generateSchemes(specificationType));
         Event event = generateEvent(withCorrectData);
@@ -78,8 +79,8 @@ class SchemaValidationServiceTest {
     }
 
     @Test
-    @DisplayName("isValid should return true when schemas are not enforced")
-    void shouldReturnTrueWhenSchemasAreNotEnforced() {
+    @DisplayName("return when schemas are not enforced")
+    void shouldReturnWhenSchemasAreNotEnforced() {
         Event event = generateEvent(true);
         when(schemaStore.getSchemaForEventType(anyString(), anyString(), anyString(), anyString())).thenReturn(generateSchemes(1));
 
@@ -90,8 +91,8 @@ class SchemaValidationServiceTest {
     }
 
     @Test
-    @DisplayName("isValid should return true when no specification is given")
-    void shouldReturnTrueWhenNoSpecIsGiven() {
+    @DisplayName("return when no specification is given")
+    void shouldReturnWhenNoSpecIsGiven() {
         when(schemaStore.getSchemaForEventType(anyString(), anyString(), anyString(), anyString())).thenReturn(null);
         Event event = generateEvent(true);
 
@@ -99,13 +100,43 @@ class SchemaValidationServiceTest {
     }
 
     @Test
-    @DisplayName("isValid should return false when event data is no valid json")
-    void shouldReturnFalseWhenEventDataIsNoValidJson() {
+    @DisplayName("throw when event data isn't valid json but the dataContentType suggests otherwise")
+    void shouldReturnWhenEventDataIsNoValidJson() {
         when(schemaStore.getSchemaForEventType(anyString(), anyString(), anyString(), anyString())).thenReturn(generateSchemes(1));
-        Event event = generateEvent(true);
-        event.setData("<optional JSON scheme>");
 
-        assertThrows(EventNotCompliantWithSchemaException.class, () -> schemaValidationService.validate(event, ENV_MOCK, PUB_ID_MOCK));
+        // Validate an event with data that is valid json but uses a json suffix in its dataContentType
+        {
+            Event event = generateEvent(true);
+            event.setDataContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+
+            assertDoesNotThrow(() -> schemaValidationService.validate(event, ENV_MOCK, PUB_ID_MOCK));
+        }
+
+        // Validate an event with data that is not valid JSON despite the dataContentType claiming it is.
+        {
+            Event event = generateEvent(true);
+            event.setDataContentType(MediaType.APPLICATION_JSON_VALUE);
+            event.setData("<optional JSON scheme>");
+
+            assertThrows(EventNotCompliantWithSchemaException.class, () -> schemaValidationService.validate(event, ENV_MOCK, PUB_ID_MOCK));
+        }
+
+        // Validate an event with data that is not valid JSON but without specifically setting dataContentType.
+        {
+            Event event = generateEvent(true);
+            event.setData("<optional JSON scheme>");
+
+            assertThrows(EventNotCompliantWithSchemaException.class, () -> schemaValidationService.validate(event, ENV_MOCK, PUB_ID_MOCK));
+        }
+
+        // Validate an event with data that is not valid JSON but the dataContentType defines it as non-JSON
+        {
+            Event event = generateEvent(true);
+            event.setDataContentType("text/plain");
+            event.setData("This is not a valid JSON string as suggested by the dataContentType");
+
+            assertDoesNotThrow(() -> schemaValidationService.validate(event, ENV_MOCK, PUB_ID_MOCK));
+        }
     }
 
     @Test
