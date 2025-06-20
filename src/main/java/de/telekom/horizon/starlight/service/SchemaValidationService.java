@@ -5,6 +5,7 @@
 package de.telekom.horizon.starlight.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.telekom.eni.pandora.horizon.metrics.HorizonMetricsConstants;
 import de.telekom.eni.pandora.horizon.metrics.HorizonMetricsHelper;
@@ -18,6 +19,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.util.Strings;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,12 +46,15 @@ public class SchemaValidationService {
 
     private final HorizonTracer tracer;
 
+    private final ObjectMapper objectMapper;
+
     @Autowired
     public SchemaValidationService(SchemaStore schemaStore, StarlightConfig starlightConfig, HorizonMetricsHelper metricsHelper, HorizonTracer tracer) {
         this.schemaStore = schemaStore;
         this.starlightConfig = starlightConfig;
         this.metricsHelper = metricsHelper;
         this.tracer = tracer;
+        this.objectMapper = new ObjectMapper();
     }
 
     /**
@@ -81,8 +86,8 @@ public class SchemaValidationService {
             return;
         }
 
-        Schema schemaCacheInstance = schemaStore.getSchemaForEventType(environment, event.getType(), splitPubId[0], splitPubId[1]);
-        if (schemaCacheInstance != null) {
+        Schema schema = schemaStore.getSchemaForEventType(environment, event.getType(), splitPubId[0], splitPubId[1]);
+        if (schema != null) {
             var currentSpan = Optional.ofNullable(tracer.getCurrentSpan());
 
             var dataContentType = Optional.ofNullable(event.getDataContentType());
@@ -91,9 +96,18 @@ public class SchemaValidationService {
                 return;
             }
 
-            JSONObject jsonEvent;
+            Object jsonEvent;
             try {
-                jsonEvent = new JSONObject(new ObjectMapper().writeValueAsString(event.getData()));
+                JsonNode jsonNode;
+                if (event.getData() instanceof String) {
+                    jsonNode = objectMapper.readTree((String) event.getData());
+                } else {
+                    jsonNode = objectMapper.valueToTree(event.getData());
+                }
+
+                jsonEvent = jsonNode.isObject() ?
+                        new JSONObject(objectMapper.writeValueAsString(jsonNode)):
+                        new JSONArray(objectMapper.writeValueAsString(jsonNode));
             } catch (JsonProcessingException | JSONException e) {
                 log.info(String.format("Event of type %s is no valid json.", event.getType()));
 
@@ -102,7 +116,7 @@ public class SchemaValidationService {
             }
 
             try {
-                schemaCacheInstance.validate(jsonEvent);
+                schema.validate(jsonEvent);
                 currentSpan.ifPresent(s -> tracer.addTagsToSpan(s, List.of(Pair.of("isMatchingSchema", "true"))));
                 metricsHelper.getRegistry()
                         .counter(HorizonMetricsConstants.METRIC_SCHEMA_VALIDATION_SUCCESS, "event_type", event.getType(), "publisher_id", publisherId)
