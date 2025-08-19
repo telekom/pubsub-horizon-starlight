@@ -9,6 +9,7 @@ import de.telekom.eni.pandora.horizon.cache.util.Query;
 import de.telekom.eni.pandora.horizon.exception.JsonCacheException;
 import de.telekom.eni.pandora.horizon.kubernetes.resource.SubscriptionResource;
 import de.telekom.horizon.starlight.config.StarlightConfig;
+import de.telekom.horizon.starlight.exception.SubscriptionMalformedException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -46,7 +47,7 @@ public class PublisherCache {
         } catch (JsonCacheException e) {
             log.error("Error occurred while executing query on JsonCacheService", e);
 
-            return new HashSet<>();
+            throw new SubscriptionMalformedException("A subscription with eventType: " + eventType + " is malformed", e);
         }
 
         var publisherIds = new HashSet<String>();
