@@ -21,14 +21,14 @@ If this is not the case, the Starlight component returns a 202 Accepted statusCo
 
 The next step is to trigger a schema check when the function is activated.
 The schema check starts with validating the publisherId and checking the schema of the eventType.
-If the schema is valid, the json event is validated with the json schema.
+If the schema is valid, the JSON event is validated with the JSON schema.
 If this fails, a 400 BadRequest is returned.
 Otherwise, the schemaValidation is canceled and the event is provided with a timestamp.
 
 If checkEventTypeOwnerShip and schemaValidation have been successfully completed or disabled and the event has been timestamped, the publishEventMessage is created.
-The status of the message is set to PROCESSED and the specified http filter is applied. After that, Starlight tries to write the event with the status PROCESSED into the kafka.
+The status of the message is set to PROCESSED and the specified HTTP filter is applied. After that, Starlight tries to write the event with the status PROCESSED into Kafka.
 If this works, the publishTask is finished and the event is marked as produced.
-If writing to the kafka failed, an exception check is performed and the exception is written before the event is also marked as produced.
+If writing to Kafka failed, an exception check is performed and the exception is written before the event is also marked as produced.
 
 Furthermore, similar to all other components in Horizon, the Starlight component incorporates logs, tracing, and metrics to document its functionalities and performance metrics.
 
@@ -37,19 +37,19 @@ Furthermore, similar to all other components in Horizon, the Starlight component
 
 graph TD;
     %% Start of the process
-    Start[Event Provider publish an event]
+    Start[Event Provider publishes an event]
     
-    Start --> CheckRealm{Does the realm <br> from the token matches <br> the environment?}
+    Start --> CheckRealm{Does the realm <br> from the token match <br> the environment?}
     
     CheckRealm -->|Yes| CheckEvent{Is event valid?}
     CheckRealm -->|No| Unauthorized[Send 401 Unauthorized statusCode]
     style Unauthorized stroke:#FF0000,stroke-width:2px
     
-    CheckEvent -->|Yes| CheckPayload{Check payload size }
+    CheckEvent -->|Yes| CheckPayload{Check payload size}
     CheckEvent -->|No| BadRequest[Send 400 BadRequest statusCode]
     style BadRequest stroke:#FF0000,stroke-width:2px
 
-    CheckPayload -->| Payload size to large | PayloadTooLarge[Send 413 Payload Too Large statusCode]
+    CheckPayload -->| Payload size too large | PayloadTooLarge[Send 413 Payload Too Large statusCode]
     style PayloadTooLarge stroke:#FF0000,stroke-width:2px
     
     CheckPayload -->| Could not serialize payload | BadRequest
@@ -77,20 +77,20 @@ flowchart TD
         
         PublisherCheck -->| Disabled | SchemaValidationCheck
 
-        SchemaValidationCheck -->| Enabled | SchemaValidation(Is schema validation <br> enabled?)
+        SchemaValidationCheck -->| Enabled | SchemaValidation(Schema validation)
         style SchemaValidation stroke:#0000FF,stroke-width:2px
 
-        SchemaValidation --> | Invalid publisherId/ schema <br> for eventType or event match the schema | AddTimeToEventIfAbsent(Set timestamp for published event)
+        SchemaValidation --> | Invalid publisherId/ schema <br> for eventType or event matches the schema | AddTimeToEventIfAbsent(Set timestamp for published event)
 
         SchemaValidationCheck -->| Disabled | AddTimeToEventIfAbsent
 
         AddTimeToEventIfAbsent --> CreatePublishedEventMessage[Create PublishedEventMessage]
 
-        CreatePublishedEventMessage --> FilterHttpHeader(Filter HTTP-Header of event Message)
+        CreatePublishedEventMessage --> FilterHttpHeader(Filter HTTP-Header of event message)
         
         FilterHttpHeader --> SendToKafka{Send statusMessage <br> to Kafka}
         
-        SendToKafka -->| Success | Success[Send PROCESSES statusMessage]
+        SendToKafka -->| Success | Success[Send PROCESSED statusMessage]
         SendToKafka -->| Payload size too large | PayloadTooLarge_2[Send 413 Payload Too Large statusCode]
         SendToKafka -->| Other exception | GatewayTimeout[Send 504 Gateway Timeout statusCode]
         style PayloadTooLarge_2 stroke:#FF0000,stroke-width:2px
@@ -142,4 +142,3 @@ flowchart TD
         style BadRequest stroke:#FF0000,stroke-width:2px
     end
 ```
-        
