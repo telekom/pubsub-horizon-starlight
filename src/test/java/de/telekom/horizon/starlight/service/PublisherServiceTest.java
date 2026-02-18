@@ -55,7 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest(classes = {PublisherService.class, KafkaAutoConfiguration.class, LocalValidatorFactoryBean.class})
+@SpringBootTest(classes = {PublisherService.class, KafkaAutoConfiguration.class, LocalValidatorFactoryBean.class, ObjectMapper.class})
 @ExtendWith(HazelcastTestInstance.class)
 class PublisherServiceTest {
 

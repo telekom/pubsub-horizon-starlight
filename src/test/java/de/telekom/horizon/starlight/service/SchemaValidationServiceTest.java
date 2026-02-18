@@ -23,8 +23,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 
@@ -52,6 +54,9 @@ class SchemaValidationServiceTest {
 
     @Mock
     StarlightConfig starlightConfig;
+
+    @Spy
+    ObjectMapper objectMapper = new ObjectMapper();
 
     @InjectMocks
     SchemaValidationService schemaValidationService;

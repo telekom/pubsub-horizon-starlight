@@ -49,12 +49,12 @@ public class SchemaValidationService {
     private final ObjectMapper objectMapper;
 
     @Autowired
-    public SchemaValidationService(SchemaStore schemaStore, StarlightConfig starlightConfig, HorizonMetricsHelper metricsHelper, HorizonTracer tracer) {
+    public SchemaValidationService(SchemaStore schemaStore, StarlightConfig starlightConfig, HorizonMetricsHelper metricsHelper, HorizonTracer tracer, ObjectMapper objectMapper) {
         this.schemaStore = schemaStore;
         this.starlightConfig = starlightConfig;
         this.metricsHelper = metricsHelper;
         this.tracer = tracer;
-        this.objectMapper = new ObjectMapper();
+        this.objectMapper = objectMapper;
     }
 
     /**

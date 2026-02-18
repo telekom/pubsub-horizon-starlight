@@ -11,7 +11,7 @@ spring:
   main:
     banner-mode: off
   lifecycle:
-    timeout-per-shutdown-phase: ${STARLIGHT_PUBLISHING_TIMEOUT_MS:30000}ms
+    timeout-per-shutdown-phase: ${STARLIGHT_PUBLISHING_TIMEOUT_MS:46000}ms
 
 server:
   shutdown: graceful
@@ -30,8 +30,6 @@ management:
   endpoint:
     health:
       show-details: always
-    shutdown:
-      enabled: true
   health:
     redis:
       enabled: ${STARLIGHT_REPORTING_REDIS_ENABLED:false}
@@ -60,7 +58,6 @@ starlight:
     oauth: true
   defaultEnvironment: ${STARLIGHT_DEFAULT_ENVIRONMENT:integration}
   publishingTopic: ${STARLIGHT_PUBLISHING_TOPIC:published}
-  publishingTimeout: ${STARLIGHT_PUBLISHING_TIMEOUT_MS:5000}
   defaultMaxPayloadSize: ${STARLIGHT_DEFAULT_MAX_PAYLOAD_SIZE:1048576}
   payloadCheckExemptionList: ${STARLIGHT_PAYLOAD_CHECK_EXEMPTION_LIST:}
   reporting:
@@ -87,6 +84,7 @@ horizon:
     transactionIdPrefix: ${STARLIGHT_KAFKA_TRANSACTION_PREFIX:starlight}
     groupId: ${STARLIGHT_KAFKA_GROUP_ID:starlight}
     lingerMs: ${STARLIGHT_KAFKA_LINGER_MS:5}
+    deliveryTimeoutMs: ${STARLIGHT_KAFKA_DELIVERY_TIMEOUT_MS:45000}
     acks: ${STARLIGHT_KAFKA_ACKS:1}
     compression:
       enabled: ${STARLIGHT_KAFKA_COMPRESSION_ENABLED:false}
