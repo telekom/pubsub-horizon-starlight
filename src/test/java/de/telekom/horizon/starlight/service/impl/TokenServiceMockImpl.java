@@ -5,11 +5,6 @@
 package de.telekom.horizon.starlight.service.impl;
 
 import de.telekom.horizon.starlight.service.TokenService;
-import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Service;
-
-@Profile("publisher-mock")
-@Service
 public class TokenServiceMockImpl implements TokenService {
 
     public static final String MOCKED_PUBLISHER_ID = "eni--pandora--foobar";
