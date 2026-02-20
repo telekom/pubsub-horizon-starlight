@@ -73,7 +73,8 @@ public class PublisherService {
             HorizonTracer tracer,
             HorizonMetricsHelper metricsHelper,
             EventWriter eventWriter,
-            Validator validator
+            Validator validator,
+            ObjectMapper objectMapper
     ) {
         this.publisherCache = publisherCache;
         this.starlightConfig = starlightConfig;
@@ -82,7 +83,7 @@ public class PublisherService {
         this.metricsHelper = metricsHelper;
         this.eventWriter = eventWriter;
         this.validator = validator;
-        this.objectMapper = new ObjectMapper();
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -160,7 +161,7 @@ public class PublisherService {
             tracer.addTagsToSpan(span, List.of(Pair.of("publisherId", publisherId)));
 
             span.annotate("send message to kafka");
-            eventWriter.send(starlightConfig.getPublishingTopic(), message, tracer).get(this.starlightConfig.getStarlightTimeout(), TimeUnit.MILLISECONDS);
+            eventWriter.send(starlightConfig.getPublishingTopic(), message, tracer).get();
 
             span.annotate("export metrics");
             metricsHelper.getRegistry().counter(METRIC_PUBLISHED_EVENTS, metricsHelper.buildTagsFromPublishedEventMessage(message)).increment();
@@ -205,7 +206,7 @@ public class PublisherService {
 
         if (httpHeaders != null) {
             httpHeaders.forEach((k, v) -> {
-                if (starlightConfig.getHeaderPropagationBlacklist().stream().noneMatch(k::matches)) {
+                if (starlightConfig.getCompiledHeaderPropagationBlacklist().stream().noneMatch(p -> p.matcher(k).matches())) {
                     var unqiueValues = v.stream().distinct().toList();
                     unqiueValues.forEach(e -> filteredHeaders.add(k, e));
                 }
@@ -298,7 +299,7 @@ public class PublisherService {
         }
 
         try {
-            long payloadSize = objectMapper.writeValueAsBytes(event.getData()).length;
+            long payloadSize = objectMapper.writeValueAsString(event.getData()).length();
             if (payloadSize > starlightConfig.getDefaultMaxPayloadSize()) {
                 currentSpan.ifPresent(s -> tracer.addTagsToSpan(s, List.of(
                         Pair.of("matchesPayloadPolicy", "false")
