@@ -27,7 +27,6 @@ import org.springframework.util.MultiValueMap;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 import static de.telekom.eni.pandora.horizon.metrics.HorizonMetricsConstants.METRIC_PUBLISHED_EVENTS;
 
@@ -58,13 +57,13 @@ public class PublisherService {
     /**
      * Creates a new PublisherService.
      *
-     * @param publisherCache                the publisher cache
-     * @param starlightConfig               the configuration for this service
-     * @param schemaValidationService       the schema validation service
-     * @param tracer                        the tracer used for debug information
-     * @param metricsHelper                 the metrics helper for updating metrics
-     * @param eventWriter                   the writer for publishing events
-     * @param validator                     the validator used for validating the event's fields
+     * @param publisherCache          the publisher cache
+     * @param starlightConfig         the configuration for this service
+     * @param schemaValidationService the schema validation service
+     * @param tracer                  the tracer used for debug information
+     * @param metricsHelper           the metrics helper for updating metrics
+     * @param eventWriter             the writer for publishing events
+     * @param validator               the validator used for validating the event's fields
      */
     public PublisherService(
             PublisherCache publisherCache,
@@ -91,7 +90,7 @@ public class PublisherService {
      * If the environment equals the default environment, the environment name is set to "default".
      * If the realm does not equal the environment after this, a RealmDoesNotMatchEnvironmentException is thrown.
      *
-     * @param realm The realm to check.
+     * @param realm       The realm to check.
      * @param environment The environment to check.
      * @throws RealmDoesNotMatchEnvironmentException if the realm does not match the environment.
      */
@@ -110,7 +109,7 @@ public class PublisherService {
      * This method checks whether the event already has its time field set and if not
      * it will set the time field to a string representation of the current time in milliseconds.
      *
-     * @param event           The event to be published.
+     * @param event The event to be published.
      */
     private void addTimeToEventIfAbsent(Event event) {
         if (event != null && event.getTime() == null) {
@@ -125,11 +124,10 @@ public class PublisherService {
      * sends the message to Kafka, and increments the metrics counter.
      * If any errors occur during the processing, the method throws a HorizonStarlightException.
      *
-     * @param event           The event to be published.
-     * @param publisherId     The ID of the publisher.
-     * @param environment     The environment where the event should be published. If null, default is used.
-     * @param httpHeaders     The HTTP headers associated with the publishing request. These will be filtered before being attached to the message.
-     *
+     * @param event       The event to be published.
+     * @param publisherId The ID of the publisher.
+     * @param environment The environment where the event should be published. If null, default is used.
+     * @param httpHeaders The HTTP headers associated with the publishing request. These will be filtered before being attached to the message.
      * @throws HorizonStarlightException If an error occurs while publishing, validating, or handling the event message. Specific exceptions include PayloadTooLargeException and CouldNotPublishEventMessageException. If an InterruptedException happens, it re-interrupts the current thread without throwing the exception.
      *
      */
@@ -141,7 +139,7 @@ public class PublisherService {
             checkEventTypeOwnership(environment, event.getType(), publisherId);
         }
 
-        if(starlightConfig.isEnableSchemaValidation()) {
+        if (starlightConfig.isEnableSchemaValidation()) {
             schemaValidationService.validate(event, environment, publisherId);
         }
 
@@ -197,16 +195,16 @@ public class PublisherService {
      * @param httpHeaders The HTTP headers to filter. This might be null, in
      *                    which case an empty HttpHeaders object is returned.
      * @return A Map containing the filtered headers. Each entry of the map
-     *         consists of a header name and a list of header values.
+     * consists of a header name and a list of header values.
      */
     private Map<String, List<String>> filterHttpHeaders(MultiValueMap<String, String> httpHeaders) {
         var filteredHeaders = new HttpHeaders();
 
         if (httpHeaders != null) {
             httpHeaders.forEach((k, v) -> {
-                if (starlightConfig.getCompiledHeaderPropagationBlacklist().stream().noneMatch(p -> p.matcher(k).matches())) {
-                    var unqiueValues = v.stream().distinct().toList();
-                    unqiueValues.forEach(e -> filteredHeaders.add(k, e));
+                if (!starlightConfig.getHeaderBlacklistPredicate().test(k)) {
+                    var uniqueValues = v.stream().distinct().toList();
+                    uniqueValues.forEach(e -> filteredHeaders.add(k, e));
                 }
             });
         }
@@ -219,9 +217,9 @@ public class PublisherService {
      * Checks event type ownership.
      *
      * @param environment the environment where the event is published
-     * @param eventType the type of the event
+     * @param eventType   the type of the event
      * @param publisherId the ID of the publisher
-     * @throws PublisherDoesNotMatchEventTypeException if the publisher ID does not match the event type
+     * @throws PublisherDoesNotMatchEventTypeException   if the publisher ID does not match the event type
      * @throws UnknownEventTypeOrNoSubscriptionException if the event type could not be found or there are no subscribers
      */
     private void checkEventTypeOwnership(String environment, String eventType, String publisherId) throws PublisherDoesNotMatchEventTypeException, UnknownEventTypeOrNoSubscriptionException {
@@ -255,7 +253,6 @@ public class PublisherService {
      * before throwing an exceptions that gets passed all violations.
      *
      * @param event The event to be validation.
-     *
      * @throws InvalidEventBodyException if event message fails model validation.
      */
     public void validateEvent(Event event) throws InvalidEventBodyException {

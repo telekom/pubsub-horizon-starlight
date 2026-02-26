@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 @Configuration
@@ -30,6 +31,8 @@ public class StarlightConfig {
 
     private List<Pattern> compiledHeaderPropagationBlacklist;
 
+    private Predicate<String> headerBlacklistPredicate;
+
     @Value("${starlight.defaultEnvironment}")
     private String defaultEnvironment;
 
@@ -47,6 +50,11 @@ public class StarlightConfig {
         compiledHeaderPropagationBlacklist = headerPropagationBlacklist.stream()
                 .map(Pattern::compile)
                 .toList();
+
+        headerBlacklistPredicate = compiledHeaderPropagationBlacklist.stream()
+                .map(Pattern::asMatchPredicate)
+                .reduce(Predicate::or)
+                .orElse(s -> false);
     }
 
 }

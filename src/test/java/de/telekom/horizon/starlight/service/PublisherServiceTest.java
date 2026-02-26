@@ -42,18 +42,22 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 import static de.telekom.horizon.starlight.test.utils.HorizonTestHelper.createNewInvalidEvent;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.contains;
 
 @SpringBootTest(classes = {PublisherService.class, KafkaAutoConfiguration.class, LocalValidatorFactoryBean.class, ObjectMapper.class})
 @ExtendWith(HazelcastTestInstance.class)
@@ -263,6 +267,98 @@ class PublisherServiceTest {
         event.setSource("https://foo/bar/42");
 
         return event;
+    }
+
+    // --- filterHttpHeaders tests ---
+
+    @SuppressWarnings("unchecked")
+    private Map<String, List<String>> invokeFilterHttpHeaders(org.springframework.util.MultiValueMap<String, String> httpHeaders) throws Exception {
+        Method method = PublisherService.class.getDeclaredMethod("filterHttpHeaders", org.springframework.util.MultiValueMap.class);
+        method.setAccessible(true);
+        try {
+            return (Map<String, List<String>>) method.invoke(publisherService, httpHeaders);
+        } catch (InvocationTargetException e) {
+            throw (Exception) e.getCause();
+        }
+    }
+
+    @Test
+    @DisplayName("filterHttpHeaders should remove blacklisted headers")
+    void filterHttpHeaders_removesBlacklistedHeaders() throws Exception {
+        when(starlightConfig.getHeaderBlacklistPredicate()).thenReturn(k -> k.equalsIgnoreCase("authorization"));
+
+        var headers = new org.springframework.util.LinkedMultiValueMap<String, String>();
+        headers.add("Authorization", "Bearer token");
+        headers.add("Content-Type", "application/json");
+
+        var result = invokeFilterHttpHeaders(headers);
+
+        assertThat(result.containsKey("Authorization"), is(false));
+        assertThat(result.containsKey("Content-Type"), is(true));
+        assertThat(result.get("Content-Type"), hasItem("application/json"));
+    }
+
+    @Test
+    @DisplayName("filterHttpHeaders should allow all headers when blacklist matches nothing")
+    void filterHttpHeaders_allowsAllWhenBlacklistEmpty() throws Exception {
+        when(starlightConfig.getHeaderBlacklistPredicate()).thenReturn(k -> false);
+
+        var headers = new org.springframework.util.LinkedMultiValueMap<String, String>();
+        headers.add("X-Custom", "value1");
+        headers.add("Accept", "text/html");
+
+        var result = invokeFilterHttpHeaders(headers);
+
+        assertThat(result.size(), is(2));
+        assertThat(result.containsKey("X-Custom"), is(true));
+        assertThat(result.containsKey("Accept"), is(true));
+    }
+
+    @Test
+    @DisplayName("filterHttpHeaders should return empty map for null input")
+    void filterHttpHeaders_returnsEmptyForNull() throws Exception {
+        var result = invokeFilterHttpHeaders(null);
+
+        assertThat(result, is(notNullValue()));
+        assertThat(result.isEmpty(), is(true));
+    }
+
+    @Test
+    @DisplayName("filterHttpHeaders should deduplicate header values")
+    void filterHttpHeaders_deduplicatesValues() throws Exception {
+        when(starlightConfig.getHeaderBlacklistPredicate()).thenReturn(k -> false);
+
+        var headers = new org.springframework.util.LinkedMultiValueMap<String, String>();
+        headers.add("X-Custom", "value1");
+        headers.add("X-Custom", "value1");
+        headers.add("X-Custom", "value2");
+
+        var result = invokeFilterHttpHeaders(headers);
+
+        assertThat(result.get("X-Custom"), hasSize(2));
+        assertThat(result.get("X-Custom"), containsInAnyOrder("value1", "value2"));
+    }
+
+    @Test
+    @DisplayName("filterHttpHeaders should filter multiple blacklisted headers via regex predicate")
+    void filterHttpHeaders_filtersMultipleBlacklistedHeadersViaRegex() throws Exception {
+        Predicate<String> regexPredicate = java.util.regex.Pattern.compile("(?i)^(authorization|x-secret-.*)$").asMatchPredicate();
+        when(starlightConfig.getHeaderBlacklistPredicate()).thenReturn(regexPredicate);
+
+        var headers = new org.springframework.util.LinkedMultiValueMap<String, String>();
+        headers.add("Authorization", "Bearer token");
+        headers.add("X-Secret-Key", "s3cret");
+        headers.add("X-Secret-Token", "t0ken");
+        headers.add("Content-Type", "application/json");
+        headers.add("Accept", "*/*");
+
+        var result = invokeFilterHttpHeaders(headers);
+
+        assertThat(result.containsKey("Authorization"), is(false));
+        assertThat(result.containsKey("X-Secret-Key"), is(false));
+        assertThat(result.containsKey("X-Secret-Token"), is(false));
+        assertThat(result.containsKey("Content-Type"), is(true));
+        assertThat(result.containsKey("Accept"), is(true));
     }
 
     private void applyKafkaStubs(String topic, long offset, int partition, PublishedEventMessage message) throws Exception {
