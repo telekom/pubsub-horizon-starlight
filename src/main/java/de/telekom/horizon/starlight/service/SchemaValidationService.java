@@ -81,7 +81,7 @@ public class SchemaValidationService {
 
         var splitPubId = publisherId.split("--");
         if (splitPubId.length < 2 || Strings.isBlank(splitPubId[0]) || Strings.isBlank(splitPubId[1])) {
-            log.info(String.format("Schema validation is canceled because no schema can be clearly assigned to PublisherId %s", publisherId));
+            log.info("Schema validation is canceled because no schema can be clearly assigned to PublisherId {}", publisherId);
 
             return;
         }
@@ -109,7 +109,7 @@ public class SchemaValidationService {
                         new JSONObject(objectMapper.writeValueAsString(jsonNode)):
                         new JSONArray(objectMapper.writeValueAsString(jsonNode));
             } catch (JsonProcessingException | JSONException e) {
-                log.info(String.format("Event of type %s is no valid json.", event.getType()));
+                log.info("Event of type {} is no valid json.", event.getType());
 
                 throw new EventNotCompliantWithSchemaException(String.format("Event of type %s is no valid json.",
                         event.getType()), e);
@@ -125,8 +125,8 @@ public class SchemaValidationService {
             } catch (ValidationException ex) {
                 currentSpan.ifPresent(s -> tracer.addTagsToSpan(s, List.of(Pair.of("isMatchingSchema", "false"))));
 
-                log.info(String.format("Event of type %s with id %s does not comply with the given schema.",
-                        event.getType(), event.getId()));
+                log.info("Event of type {} with id {} does not comply with the given schema.",
+                        event.getType(), event.getId());
 
                 metricsHelper.getRegistry()
                         .counter(HorizonMetricsConstants.METRIC_SCHEMA_VALIDATION_FAILURE, "event_type", event.getType(), "publisher_id", publisherId)
@@ -141,8 +141,8 @@ public class SchemaValidationService {
                         event.getType(), event.getId()), ex);
             }
         } else {
-            log.debug(String.format("No spec found for event type %s in environment %s, skipping validation.",
-                    event.getType(), environment));
+            log.debug("No spec found for event type {} in environment {}, skipping validation.",
+                    event.getType(), environment);
         }
     }
 }
