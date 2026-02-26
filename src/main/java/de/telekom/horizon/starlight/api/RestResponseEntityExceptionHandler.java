@@ -75,7 +75,7 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
     @ExceptionHandler(CouldNotPublishEventMessageException.class)
     @ResponseStatus(HttpStatus.GATEWAY_TIMEOUT)
     protected ResponseEntity<Object> handleCouldNotPublishEventMessageException(CouldNotPublishEventMessageException e, WebRequest request) {
-        log.error("Horizon Starlight error occurred while writing to kafka: " + e.getMessage(), e);
+        log.error("Horizon Starlight error occurred while writing to kafka: {}", e.getMessage(), e);
 
         return responseEntityForException(e, HttpStatus.GATEWAY_TIMEOUT, request, null);
     }
@@ -84,7 +84,7 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
     @ExceptionHandler(HorizonStarlightException.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     protected ResponseEntity<Object> handleHorizonStarlightException(HorizonStarlightException e, WebRequest request) {
-        log.error("Horizon Starlight error occurred: " + e.getMessage(), e);
+        log.error("Horizon Starlight error occurred: {}", e.getMessage(), e);
 
         return responseEntityForException(e, HttpStatus.INTERNAL_SERVER_ERROR, request, null);
     }
@@ -93,7 +93,7 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     protected ResponseEntity<Object> handleAny(Exception e, WebRequest request) {
-        log.error("Error occurred: " + e.getMessage(), e);
+        log.error("Error occurred: {}", e.getMessage(), e);
 
         var headers = new HttpHeaders();
 
@@ -107,7 +107,7 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
             } else {
                 status = HttpStatus.INTERNAL_SERVER_ERROR;
             }
-        } catch(Exception unknownException) {
+        } catch (Exception unknownException) {
             status = HttpStatus.INTERNAL_SERVER_ERROR;
         }
 
