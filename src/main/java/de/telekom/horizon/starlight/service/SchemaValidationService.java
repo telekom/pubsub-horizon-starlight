@@ -5,7 +5,6 @@
 package de.telekom.horizon.starlight.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.telekom.eni.pandora.horizon.metrics.HorizonMetricsConstants;
 import de.telekom.eni.pandora.horizon.metrics.HorizonMetricsHelper;
@@ -27,9 +26,10 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MimeType;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-
 
 /**
  * A service class responsible for managing the schema validation of events.
@@ -98,16 +98,24 @@ public class SchemaValidationService {
 
             Object jsonEvent;
             try {
-                JsonNode jsonNode;
-                if (event.getData() instanceof String) {
-                    jsonNode = objectMapper.readTree((String) event.getData());
-                } else {
-                    jsonNode = objectMapper.valueToTree(event.getData());
-                }
+                Object data = event.getData();
 
-                jsonEvent = jsonNode.isObject() ?
-                        new JSONObject(objectMapper.writeValueAsString(jsonNode)):
-                        new JSONArray(objectMapper.writeValueAsString(jsonNode));
+                if (data instanceof JSONObject || data instanceof JSONArray) {
+                    jsonEvent = data;
+                } else if (data instanceof String jsonString) {
+                    jsonEvent = jsonString.trim().startsWith("[") ?
+                            new JSONArray(jsonString) :
+                            new JSONObject(jsonString);
+                } else if (data instanceof Map) {
+                    jsonEvent = new JSONObject((Map<?, ?>) data);
+                } else if (data instanceof Collection) {
+                    jsonEvent = new JSONArray((Collection<?>) data);
+                } else {
+                    String jsonString = objectMapper.writeValueAsString(data);
+                    jsonEvent = jsonString.trim().startsWith("[") ?
+                            new JSONArray(jsonString) :
+                            new JSONObject(jsonString);
+                }
             } catch (JsonProcessingException | JSONException e) {
                 log.info("Event of type {} is no valid json.", event.getType());
 
