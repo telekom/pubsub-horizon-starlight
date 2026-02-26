@@ -121,6 +121,7 @@ class PublisherServiceTest {
         verify(publisherCache, times(isEnablePublisherCheck ? 1 : 0)).findPublisherIds(DEFAULT_ENVIRONMENT, message.getEvent().getType());
         verify(kafkaTemplate).send(any(ProducerRecord.class));
     }
+
     @Test
     @DisplayName("Event cannot be published due to a publisherId mismatch or an empty publisherId")
     void eventMessageCanBePublishedWithInvalidPublisherIdWhenCheckIsDisabled() {
@@ -196,7 +197,7 @@ class PublisherServiceTest {
 
             var responseFuture = mock(CompletableFuture.class);
             when(kafkaTemplate.send(any(ProducerRecord.class))).thenReturn(responseFuture);
-            when(responseFuture.get(anyLong(), any(TimeUnit.class))).thenThrow(new TimeoutException("I timed out writing to kafka"));
+            when(responseFuture.get()).thenThrow(new TimeoutException("I timed out writing to kafka"));
 
             publisherService.publish(event, DEFAULT_PUBLISHER_ID, DEFAULT_ENVIRONMENT, null);
         });
