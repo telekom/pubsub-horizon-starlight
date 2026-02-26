@@ -165,8 +165,6 @@ public class PublisherService {
 
             span.annotate("export metrics");
             metricsHelper.getRegistry().counter(METRIC_PUBLISHED_EVENTS, metricsHelper.buildTagsFromPublishedEventMessage(message)).increment();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
         } catch (Exception e) {
             span.error(e);
             handlePublishException(e);
