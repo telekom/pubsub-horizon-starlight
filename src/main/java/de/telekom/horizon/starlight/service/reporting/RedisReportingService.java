@@ -14,6 +14,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @ConditionalOnProperty(value = "starlight.reporting.redis.enabled", havingValue = "true")
@@ -35,15 +36,17 @@ public class RedisReportingService implements ReportingService {
     public void markEventProduced(Event event) {
         try {
             var testCaseName = getTestCaseValueFromEvent(event);
-            redisTemplate.opsForValue().increment(testCaseName);
+            testCaseName.ifPresentOrElse(name -> redisTemplate.opsForValue().increment(name),
+                    () -> log.debug("'testCase' is missing in event data. Redis key will not be incremented"));
         } catch (Exception e) {
             log.error("Cannot increment redis key for load test reporting", e);
         }
     }
 
-    private String getTestCaseValueFromEvent(Event event) {
-        Map<String, String> eventData = objectMapper.convertValue(event.getData(), new TypeReference<>() {});
-        return eventData.get("testCase");
+    private Optional<String> getTestCaseValueFromEvent(Event event) {
+        Map<String, String> eventData = objectMapper.convertValue(event.getData(), new TypeReference<>() {
+        });
+        return Optional.ofNullable(eventData.get("testCase"));
     }
 
 
