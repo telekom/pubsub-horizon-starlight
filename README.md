@@ -24,6 +24,7 @@ SPDX-License-Identifier: Apache-2.0
 [![REUSE status](https://api.reuse.software/badge/github.com/telekom/pubsub-horizon-starlight)](https://api.reuse.software/info/github.com/telekom/pubsub-horizon-starlight)
 -->
 [![Gradle Build and Test](https://github.com/telekom/pubsub-horizon-starlight/actions/workflows/gradle-build.yml/badge.svg)](https://github.com/telekom/pubsub-horizon-starlight/actions/workflows/gradle-build.yml)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/telekom/pubsub-horizon-starlight)
 
 ## Overview
 Horizon's Starlight provides a REST endpoint allowing event providers to publish events. Its responsibilities include event acceptance, authentication/authorization, schema validation (optional), and publishing to [Horizon's](https://github.com/telekom/pubsub-horizon) underlying message broker (Kafka).
