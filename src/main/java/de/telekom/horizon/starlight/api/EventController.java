@@ -71,8 +71,6 @@ public class EventController {
     private void addTracingTags(Event event) {
         var currentSpan = Optional.ofNullable(tracer.getCurrentSpan());
 
-        log.info("currentSpan: {}", tracer.getCurrentSpan());
-
         currentSpan.ifPresent(s -> tracer.addTagsToSpan(s, List.of(
                 Pair.of("eventType", event.getType()),
                 Pair.of("eventId", event.getId())

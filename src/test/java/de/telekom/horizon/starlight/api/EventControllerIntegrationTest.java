@@ -5,9 +5,11 @@
 package de.telekom.horizon.starlight.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.telekom.eni.pandora.horizon.kafka.event.EventWriter;
 import de.telekom.eni.pandora.horizon.metrics.AdditionalFields;
 import de.telekom.eni.pandora.horizon.model.event.Event;
 import de.telekom.eni.pandora.horizon.model.event.PublishedEventMessage;
+import de.telekom.eni.pandora.horizon.tracing.HorizonTracer;
 import de.telekom.horizon.starlight.cache.PublisherCache;
 import de.telekom.horizon.starlight.service.TokenService;
 import de.telekom.horizon.starlight.service.reporting.ReportingService;
@@ -23,21 +25,20 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ActiveProfiles("publisher-mock")
 @ExtendWith(HazelcastTestInstance.class)
 class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
@@ -52,6 +53,9 @@ class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @SpyBean
     private ReportingService reportingService;
+
+    @SpyBean
+    private EventWriter eventWriter;
 
     private static final String DEFAULT_PUBLISHER = "eni--pandora--foobar";
 
@@ -181,6 +185,35 @@ class EventControllerIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(head("/v1/integration/events"))
                 .andExpect(status().isNoContent())
                 .andExpect(header().exists("X-Health-Check-Timestamp"));
+    }
+
+    @Test
+    void testPublishShouldNotReturn201WhenInterruptedDuringKafkaSend() throws Exception {
+        when(publisherCache.findPublisherIds(any(), any())).thenReturn(Set.of(DEFAULT_PUBLISHER));
+
+        // Return a future whose .get() throws InterruptedException
+        CompletableFuture interruptedFuture = new CompletableFuture<>() {
+            @Override
+            public Object get() throws InterruptedException {
+                throw new InterruptedException("Thread was interrupted during Kafka send");
+            }
+        };
+        doReturn(interruptedFuture).when(eventWriter).send(anyString(), any(PublishedEventMessage.class), any(HorizonTracer.class));
+
+        // given
+        Event newEvent = HorizonTestHelper.createNewEvent();
+
+        // when / then - should NOT be 201 CREATED
+        mockMvc.perform(
+                post("/v1/integration/events")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer Foo")
+                        .content(objectMapper.writeValueAsString(newEvent))
+        ).andExpect(status().is5xxServerError());
+
+        // Verify that markEventProduced was NOT called since the publish failed
+        verify(reportingService, never()).markEventProduced(any(Event.class));
     }
 
 }

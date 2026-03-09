@@ -5,7 +5,6 @@
 package de.telekom.horizon.starlight.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.telekom.eni.pandora.horizon.metrics.HorizonMetricsConstants;
 import de.telekom.eni.pandora.horizon.metrics.HorizonMetricsHelper;
@@ -27,9 +26,10 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MimeType;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-
 
 /**
  * A service class responsible for managing the schema validation of events.
@@ -49,12 +49,12 @@ public class SchemaValidationService {
     private final ObjectMapper objectMapper;
 
     @Autowired
-    public SchemaValidationService(SchemaStore schemaStore, StarlightConfig starlightConfig, HorizonMetricsHelper metricsHelper, HorizonTracer tracer) {
+    public SchemaValidationService(SchemaStore schemaStore, StarlightConfig starlightConfig, HorizonMetricsHelper metricsHelper, HorizonTracer tracer, ObjectMapper objectMapper) {
         this.schemaStore = schemaStore;
         this.starlightConfig = starlightConfig;
         this.metricsHelper = metricsHelper;
         this.tracer = tracer;
-        this.objectMapper = new ObjectMapper();
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -81,7 +81,7 @@ public class SchemaValidationService {
 
         var splitPubId = publisherId.split("--");
         if (splitPubId.length < 2 || Strings.isBlank(splitPubId[0]) || Strings.isBlank(splitPubId[1])) {
-            log.info(String.format("Schema validation is canceled because no schema can be clearly assigned to PublisherId %s", publisherId));
+            log.info("Schema validation is canceled because no schema can be clearly assigned to PublisherId {}", publisherId);
 
             return;
         }
@@ -98,18 +98,26 @@ public class SchemaValidationService {
 
             Object jsonEvent;
             try {
-                JsonNode jsonNode;
-                if (event.getData() instanceof String) {
-                    jsonNode = objectMapper.readTree((String) event.getData());
-                } else {
-                    jsonNode = objectMapper.valueToTree(event.getData());
-                }
+                Object data = event.getData();
 
-                jsonEvent = jsonNode.isObject() ?
-                        new JSONObject(objectMapper.writeValueAsString(jsonNode)):
-                        new JSONArray(objectMapper.writeValueAsString(jsonNode));
+                if (data instanceof JSONObject || data instanceof JSONArray) {
+                    jsonEvent = data;
+                } else if (data instanceof String jsonString) {
+                    jsonEvent = jsonString.trim().startsWith("[") ?
+                            new JSONArray(jsonString) :
+                            new JSONObject(jsonString);
+                } else if (data instanceof Map) {
+                    jsonEvent = new JSONObject((Map<?, ?>) data);
+                } else if (data instanceof Collection) {
+                    jsonEvent = new JSONArray((Collection<?>) data);
+                } else {
+                    String jsonString = objectMapper.writeValueAsString(data);
+                    jsonEvent = jsonString.trim().startsWith("[") ?
+                            new JSONArray(jsonString) :
+                            new JSONObject(jsonString);
+                }
             } catch (JsonProcessingException | JSONException e) {
-                log.info(String.format("Event of type %s is no valid json.", event.getType()));
+                log.info("Event of type {} is no valid json.", event.getType());
 
                 throw new EventNotCompliantWithSchemaException(String.format("Event of type %s is no valid json.",
                         event.getType()), e);
@@ -125,8 +133,8 @@ public class SchemaValidationService {
             } catch (ValidationException ex) {
                 currentSpan.ifPresent(s -> tracer.addTagsToSpan(s, List.of(Pair.of("isMatchingSchema", "false"))));
 
-                log.info(String.format("Event of type %s with id %s does not comply with the given schema.",
-                        event.getType(), event.getId()));
+                log.info("Event of type {} with id {} does not comply with the given schema.",
+                        event.getType(), event.getId());
 
                 metricsHelper.getRegistry()
                         .counter(HorizonMetricsConstants.METRIC_SCHEMA_VALIDATION_FAILURE, "event_type", event.getType(), "publisher_id", publisherId)
@@ -141,8 +149,8 @@ public class SchemaValidationService {
                         event.getType(), event.getId()), ex);
             }
         } else {
-            log.debug(String.format("No spec found for event type %s in environment %s, skipping validation.",
-                    event.getType(), environment));
+            log.debug("No spec found for event type {} in environment {}, skipping validation.",
+                    event.getType(), environment);
         }
     }
 }
