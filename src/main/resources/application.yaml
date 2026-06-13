@@ -60,6 +60,23 @@ starlight:
   publishingTopic: ${STARLIGHT_PUBLISHING_TOPIC:published}
   defaultMaxPayloadSize: ${STARLIGHT_DEFAULT_MAX_PAYLOAD_SIZE:1048576}
   payloadCheckExemptionList: ${STARLIGHT_PAYLOAD_CHECK_EXEMPTION_LIST:}
+  # Content-based event-type routing. Rewrites event.type at publish time so the multiplexer can route
+  # by type instead of running expensive per-subscription content filters. Disabled by default -> the
+  # publish path behaves exactly as before. See docs/event-type-routing.md.
+  event-type-routing:
+    enabled: ${STARLIGHT_EVENT_TYPE_ROUTING_ENABLED:false}
+    # Only route events from this publisher (OAuth2 clientId). Spectre publishes as "gateway". Blank disables the gate.
+    publisher-id: ${STARLIGHT_EVENT_TYPE_ROUTING_PUBLISHER_ID:gateway}
+    # Only events whose original type starts with this prefix are eligible. Blank disables the gate.
+    applicable-type-prefix: ${STARLIGHT_EVENT_TYPE_ROUTING_APPLICABLE_TYPE_PREFIX:de.telekom.ei.listener}
+    # Ordered rules; first match wins. Equality conditions are AND-ed and evaluated against event.data.
+    # Typically supplied via config-map / Helm values, e.g.:
+    #   rules:
+    #     - target-type: de.telekom.ei.top-talker
+    #       match:
+    #         issue: <top-talker-issue>
+    #         provider: <top-talker-service-owner>
+    rules: []
   reporting:
     redis:
       enabled: ${STARLIGHT_REPORTING_REDIS_ENABLED:false}

@@ -53,6 +53,8 @@ public class PublisherService {
 
     private final ObjectMapper objectMapper;
 
+    private final EventTypeRoutingService eventTypeRoutingService;
+
 
     /**
      * Creates a new PublisherService.
@@ -64,6 +66,7 @@ public class PublisherService {
      * @param metricsHelper           the metrics helper for updating metrics
      * @param eventWriter             the writer for publishing events
      * @param validator               the validator used for validating the event's fields
+     * @param eventTypeRoutingService applies content-based event-type routing before publishing
      */
     public PublisherService(
             PublisherCache publisherCache,
@@ -73,7 +76,8 @@ public class PublisherService {
             HorizonMetricsHelper metricsHelper,
             EventWriter eventWriter,
             Validator validator,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            EventTypeRoutingService eventTypeRoutingService
     ) {
         this.publisherCache = publisherCache;
         this.starlightConfig = starlightConfig;
@@ -83,6 +87,7 @@ public class PublisherService {
         this.eventWriter = eventWriter;
         this.validator = validator;
         this.objectMapper = objectMapper;
+        this.eventTypeRoutingService = eventTypeRoutingService;
     }
 
     /**
@@ -134,6 +139,10 @@ public class PublisherService {
     public void publish(Event event, String publisherId, String environment,
                         MultiValueMap<String, String> httpHeaders) throws HorizonStarlightException {
 
+        // Content-based routing: may rewrite event.type before ownership is checked, so the (rewritten)
+        // type is what gets authorised and published. Kept first so the existing checks apply to the
+        // effective type. No-op unless enabled and a rule matches.
+        eventTypeRoutingService.applyRouting(event, publisherId);
 
         if (starlightConfig.isEnablePublisherCheck()) {
             checkEventTypeOwnership(environment, event.getType(), publisherId);
