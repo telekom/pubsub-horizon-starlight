@@ -40,7 +40,10 @@ Disabled by default; when disabled the publish path is byte-for-byte unchanged. 
 | `rules` | — (config-map / Helm values) | `[]` | Ordered rules; **first match wins**. |
 
 Each rule has a `target-type` and a `match` map of equality conditions (AND-ed), evaluated against
-`event.data`. Supply `rules` via a config-map–mounted `application.yaml` overlay or Helm values:
+`event.data`. **Each condition is optional**: only the keys you specify are evaluated; an unspecified key
+(e.g. omit `consumer`) is not used as a criterion. An **empty or omitted `match` matches every gated
+event** — use it deliberately as a catch-all / default target, and (first match wins) place it last.
+Supply `rules` via a config-map–mounted `application.yaml` overlay or Helm values:
 
 ```yaml
 starlight:

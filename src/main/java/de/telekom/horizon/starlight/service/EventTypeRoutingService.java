@@ -77,9 +77,13 @@ public class EventTypeRoutingService {
     private boolean matches(Event event, EventTypeRoutingConfig.RoutingRule rule) {
         var conditions = rule.getMatch();
         if (conditions == null || conditions.isEmpty()) {
-            return false; // never auto-match — avoids an accidental catch-all rule
+            // Each condition is optional; with none specified every condition defaults to "matched",
+            // so an empty/omitted match is a deliberate catch-all for every gated event. The
+            // enabled / publisher-id / applicable-type-prefix gates still bound which events qualify.
+            return true;
         }
         for (Map.Entry<String, String> condition : conditions.entrySet()) {
+            // Only the keys present here are evaluated (AND-ed); an unspecified key is not a criterion.
             var actual = extractValue(event.getData(), condition.getKey());
             if (actual == null || !actual.equals(condition.getValue())) {
                 return false;

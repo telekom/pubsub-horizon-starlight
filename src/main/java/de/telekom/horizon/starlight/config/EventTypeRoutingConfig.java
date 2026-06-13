@@ -79,8 +79,12 @@ public class EventTypeRoutingConfig {
         /**
          * Equality conditions, AND-ed together, evaluated against {@code event.data}. Keys are dot-paths into
          * the (deserialised JSON) payload — e.g. {@code issue}, {@code provider}, {@code consumer},
-         * {@code method}, or a nested {@code header.x-some-header}. Values are compared as strings. An empty
-         * map never matches (guards against an accidental catch-all rule).
+         * {@code method}, or a nested {@code header.x-some-header}. Values are compared as strings.
+         *
+         * <p>Each condition is <b>optional</b>: only the keys you specify are evaluated; an unspecified key
+         * (e.g. omit {@code consumer}) is not used as a criterion. An empty or omitted map therefore matches
+         * <b>every gated event</b> — use it deliberately as a catch-all / default target, and (since the first
+         * matching rule wins) place such a rule last.
          */
         private Map<String, String> match = new LinkedHashMap<>();
     }

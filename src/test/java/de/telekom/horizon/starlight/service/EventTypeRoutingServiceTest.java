@@ -67,8 +67,8 @@ class EventTypeRoutingServiceTest {
     @Test
     @DisplayName("rewrites the type when a rule matches on issue")
     void rewritesOnMatch() {
-        var svc = new EventTypeRoutingService(config(true, rule(DEDICATED, Map.of("issue", "fsf-api"))));
-        var event = listenerEvent(spectreData("c", "p", "fsf-api", "REQUEST", "GET"));
+        var svc = new EventTypeRoutingService(config(true, rule(DEDICATED, Map.of("issue", "some-api"))));
+        var event = listenerEvent(spectreData("c", "p", "some-api", "REQUEST", "GET"));
 
         svc.applyRouting(event, GATEWAY);
 
@@ -78,8 +78,8 @@ class EventTypeRoutingServiceTest {
     @Test
     @DisplayName("no-op when routing is disabled")
     void noopWhenDisabled() {
-        var svc = new EventTypeRoutingService(config(false, rule(DEDICATED, Map.of("issue", "fsf-api"))));
-        var event = listenerEvent(spectreData("c", "p", "fsf-api", "REQUEST", "GET"));
+        var svc = new EventTypeRoutingService(config(false, rule(DEDICATED, Map.of("issue", "some-api"))));
+        var event = listenerEvent(spectreData("c", "p", "some-api", "REQUEST", "GET"));
 
         svc.applyRouting(event, GATEWAY);
 
@@ -89,8 +89,8 @@ class EventTypeRoutingServiceTest {
     @Test
     @DisplayName("no-op for a publisher other than the configured one")
     void noopForOtherPublisher() {
-        var svc = new EventTypeRoutingService(config(true, rule(DEDICATED, Map.of("issue", "fsf-api"))));
-        var event = listenerEvent(spectreData("c", "p", "fsf-api", "REQUEST", "GET"));
+        var svc = new EventTypeRoutingService(config(true, rule(DEDICATED, Map.of("issue", "some-api"))));
+        var event = listenerEvent(spectreData("c", "p", "some-api", "REQUEST", "GET"));
 
         svc.applyRouting(event, "some-other-client");
 
@@ -100,8 +100,8 @@ class EventTypeRoutingServiceTest {
     @Test
     @DisplayName("no-op when the original type is outside the applicable prefix")
     void noopForNonListenerType() {
-        var svc = new EventTypeRoutingService(config(true, rule(DEDICATED, Map.of("issue", "fsf-api"))));
-        var event = listenerEvent(spectreData("c", "p", "fsf-api", "REQUEST", "GET"));
+        var svc = new EventTypeRoutingService(config(true, rule(DEDICATED, Map.of("issue", "some-api"))));
+        var event = listenerEvent(spectreData("c", "p", "some-api", "REQUEST", "GET"));
         event.setType("accountmanagement.billingaccount.change.attribute.value.v4");
 
         svc.applyRouting(event, GATEWAY);
@@ -113,7 +113,7 @@ class EventTypeRoutingServiceTest {
     @DisplayName("no-op when no rule matches")
     void noopWhenNoMatch() {
         var svc = new EventTypeRoutingService(config(true, rule(DEDICATED, Map.of("issue", "other-api"))));
-        var event = listenerEvent(spectreData("c", "p", "fsf-api", "REQUEST", "GET"));
+        var event = listenerEvent(spectreData("c", "p", "some-api", "REQUEST", "GET"));
 
         svc.applyRouting(event, GATEWAY);
 
@@ -124,15 +124,15 @@ class EventTypeRoutingServiceTest {
     @DisplayName("multi-condition rule requires ALL conditions (AND)")
     void multiConditionAnd() {
         var match = new LinkedHashMap<String, String>();
-        match.put("issue", "fsf-api");
-        match.put("provider", "fsf-team");
+        match.put("issue", "some-api");
+        match.put("provider", "some-team");
         var svc = new EventTypeRoutingService(config(true, rule(DEDICATED, match)));
 
-        var partial = listenerEvent(spectreData("c", "other-team", "fsf-api", "REQUEST", "GET"));
+        var partial = listenerEvent(spectreData("c", "other-team", "some-api", "REQUEST", "GET"));
         svc.applyRouting(partial, GATEWAY);
         assertEquals(GENERIC, partial.getType(), "should not match when only one condition holds");
 
-        var full = listenerEvent(spectreData("c", "fsf-team", "fsf-api", "REQUEST", "GET"));
+        var full = listenerEvent(spectreData("c", "some-team", "some-api", "REQUEST", "GET"));
         svc.applyRouting(full, GATEWAY);
         assertEquals(DEDICATED, full.getType(), "should match when both conditions hold");
     }
@@ -169,9 +169,9 @@ class EventTypeRoutingServiceTest {
     @DisplayName("first matching rule wins")
     void firstMatchWins() {
         var svc = new EventTypeRoutingService(config(true,
-                rule("de.telekom.ei.first", Map.of("issue", "fsf-api")),
-                rule("de.telekom.ei.second", Map.of("issue", "fsf-api"))));
-        var event = listenerEvent(spectreData("c", "p", "fsf-api", "REQUEST", "GET"));
+                rule("de.telekom.ei.first", Map.of("issue", "some-api")),
+                rule("de.telekom.ei.second", Map.of("issue", "some-api"))));
+        var event = listenerEvent(spectreData("c", "p", "some-api", "REQUEST", "GET"));
 
         svc.applyRouting(event, GATEWAY);
 
@@ -181,7 +181,7 @@ class EventTypeRoutingServiceTest {
     @Test
     @DisplayName("matches on a nested header dot-path")
     void matchesNestedPath() {
-        var data = spectreData("c", "p", "fsf-api", "REQUEST", "GET");
+        var data = spectreData("c", "p", "some-api", "REQUEST", "GET");
         data.put("header", Map.of("x-tenant", "premium"));
         var svc = new EventTypeRoutingService(config(true, rule(DEDICATED, Map.of("header.x-tenant", "premium"))));
         var event = listenerEvent(data);
@@ -192,20 +192,48 @@ class EventTypeRoutingServiceTest {
     }
 
     @Test
-    @DisplayName("an empty match never matches (no accidental catch-all)")
-    void emptyMatchNeverMatches() {
-        var svc = new EventTypeRoutingService(config(true, rule(DEDICATED, Map.of())));
-        var event = listenerEvent(spectreData("c", "p", "fsf-api", "REQUEST", "GET"));
+    @DisplayName("unspecified criteria are optional (ignored) — only specified keys are evaluated")
+    void unspecifiedCriteriaAreIgnored() {
+        // rule specifies only issue; provider/consumer/method are NOT criteria and must not affect the match
+        var svc = new EventTypeRoutingService(config(true, rule(DEDICATED, Map.of("issue", "some-api"))));
+        var event = listenerEvent(spectreData("any-consumer", "any-provider", "some-api", "RESPONSE", "DELETE"));
 
         svc.applyRouting(event, GATEWAY);
 
-        assertEquals(GENERIC, event.getType());
+        assertEquals(DEDICATED, event.getType());
+    }
+
+    @Test
+    @DisplayName("an empty/omitted match matches every gated event (explicit catch-all)")
+    void emptyMatchMatchesAllGatedEvents() {
+        var svc = new EventTypeRoutingService(config(true, rule(DEDICATED, Map.of())));
+        var event = listenerEvent(spectreData("c", "p", "some-api", "REQUEST", "GET"));
+
+        svc.applyRouting(event, GATEWAY);
+
+        assertEquals(DEDICATED, event.getType());
+    }
+
+    @Test
+    @DisplayName("the catch-all still respects the gates (publisher / type / enabled)")
+    void emptyMatchStillRespectsGates() {
+        var svc = new EventTypeRoutingService(config(true, rule(DEDICATED, Map.of())));
+
+        var wrongPublisher = listenerEvent(spectreData("c", "p", "some-api", "REQUEST", "GET"));
+        svc.applyRouting(wrongPublisher, "some-other-client");
+        assertEquals(GENERIC, wrongPublisher.getType(), "catch-all must not fire for a non-configured publisher");
+
+        var nonListener = listenerEvent(spectreData("c", "p", "some-api", "REQUEST", "GET"));
+        nonListener.setType("accountmanagement.billingaccount.change.attribute.value.v4");
+        svc.applyRouting(nonListener, GATEWAY);
+        assertEquals("accountmanagement.billingaccount.change.attribute.value.v4", nonListener.getType(),
+                "catch-all must not fire for a type outside the applicable prefix");
     }
 
     @Test
     @DisplayName("null payload data is safe and is a no-op")
     void nullDataSafe() {
-        var svc = new EventTypeRoutingService(config(true, rule(DEDICATED, Map.of("issue", "fsf-api"))));
+        var svc = new EventTypeRoutingService(config(true, rule(DEDICATED, Map.of("issue", "some-api"))));
         var event = listenerEvent(null);
 
         assertDoesNotThrow(() -> svc.applyRouting(event, GATEWAY));
@@ -215,10 +243,10 @@ class EventTypeRoutingServiceTest {
     @Test
     @DisplayName("a blank publisher gate routes regardless of publisher")
     void blankPublisherGateRoutesAnyPublisher() {
-        var cfg = config(true, rule(DEDICATED, Map.of("issue", "fsf-api")));
+        var cfg = config(true, rule(DEDICATED, Map.of("issue", "some-api")));
         cfg.setPublisherId("");
         var svc = new EventTypeRoutingService(cfg);
-        var event = listenerEvent(spectreData("c", "p", "fsf-api", "REQUEST", "GET"));
+        var event = listenerEvent(spectreData("c", "p", "some-api", "REQUEST", "GET"));
 
         svc.applyRouting(event, "any-client");
 
