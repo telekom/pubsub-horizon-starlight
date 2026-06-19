@@ -6,8 +6,6 @@ name: CI
 
 on:
   push:
-  pull_request:
-    branches: [main]
 
 jobs:
   build:
@@ -22,7 +20,6 @@ jobs:
     uses: telekom/pubsub-horizon-ci/.github/workflows/reuse-compliance.yml@main
 
   publish:
-    if: github.event_name == 'push'
     needs: [build]
     uses: telekom/pubsub-horizon-ci/.github/workflows/docker-publish.yml@main
     with:
