@@ -53,17 +53,20 @@ public class PublisherService {
 
     private final ObjectMapper objectMapper;
 
+    private final SpectreDirectPublishService spectreDirectPublishService;
+
 
     /**
      * Creates a new PublisherService.
      *
-     * @param publisherCache          the publisher cache
-     * @param starlightConfig         the configuration for this service
-     * @param schemaValidationService the schema validation service
-     * @param tracer                  the tracer used for debug information
-     * @param metricsHelper           the metrics helper for updating metrics
-     * @param eventWriter             the writer for publishing events
-     * @param validator               the validator used for validating the event's fields
+     * @param publisherCache              the publisher cache
+     * @param starlightConfig             the configuration for this service
+     * @param schemaValidationService     the schema validation service
+     * @param tracer                      the tracer used for debug information
+     * @param metricsHelper               the metrics helper for updating metrics
+     * @param eventWriter                 the writer for publishing events
+     * @param validator                   the validator used for validating the event's fields
+     * @param spectreDirectPublishService direct-publishes eligible Spectre events to a dedicated type before publishing
      */
     public PublisherService(
             PublisherCache publisherCache,
@@ -73,7 +76,8 @@ public class PublisherService {
             HorizonMetricsHelper metricsHelper,
             EventWriter eventWriter,
             Validator validator,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            SpectreDirectPublishService spectreDirectPublishService
     ) {
         this.publisherCache = publisherCache;
         this.starlightConfig = starlightConfig;
@@ -83,6 +87,7 @@ public class PublisherService {
         this.eventWriter = eventWriter;
         this.validator = validator;
         this.objectMapper = objectMapper;
+        this.spectreDirectPublishService = spectreDirectPublishService;
     }
 
     /**
@@ -134,6 +139,9 @@ public class PublisherService {
     public void publish(Event event, String publisherId, String environment,
                         MultiValueMap<String, String> httpHeaders) throws HorizonStarlightException {
 
+        // Spectre direct-publish: may rewrite event.type before ownership check.
+        // No-op unless starlight.spectre.direct-publish.enabled is true and a rule matches.
+        spectreDirectPublishService.rewriteTypeForDirectPublish(event, publisherId);
 
         if (starlightConfig.isEnablePublisherCheck()) {
             checkEventTypeOwnership(environment, event.getType(), publisherId);
