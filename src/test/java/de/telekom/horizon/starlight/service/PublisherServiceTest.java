@@ -81,6 +81,8 @@ class PublisherServiceTest {
     ScopedDebugSpanWrapper scopedDebugSpanWrapper;
     @MockBean
     HorizonMetricsHelper metricsHelper;
+    @MockBean
+    SpectreDirectPublishService spectreDirectPublishService;
     @Autowired
     PublisherService publisherService;
     @Autowired

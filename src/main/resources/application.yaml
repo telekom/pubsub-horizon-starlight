@@ -60,6 +60,28 @@ starlight:
   publishingTopic: ${STARLIGHT_PUBLISHING_TOPIC:published}
   defaultMaxPayloadSize: ${STARLIGHT_DEFAULT_MAX_PAYLOAD_SIZE:1048576}
   payloadCheckExemptionList: ${STARLIGHT_PAYLOAD_CHECK_EXEMPTION_LIST:}
+  # Spectre direct-publish. Rewrites event.type at publish time so the multiplexer routes high-volume
+  # Spectre "wiretap" events by type straight to the team's dedicated, filter-less subscription — skipping
+  # the generic-stream fan-out, the per-subscription content filter, and the auto_event_route_post
+  # re-publish loop. Disabled by default -> the publish path behaves exactly as before.
+  # See docs/spectre-direct-publish.md.
+  spectre:
+    direct-publish:
+      enabled: ${STARLIGHT_SPECTRE_DIRECT_PUBLISH_ENABLED:false}
+      # Only direct-publish events from this publisher (OAuth2 clientId). Jumper publishes as "gateway".
+      # Must NOT be blank (a blank value fails startup validation).
+      publisher-id: ${STARLIGHT_SPECTRE_DIRECT_PUBLISH_PUBLISHER_ID:gateway}
+      # Event-type gate (exact equality). Default = the generic Spectre type. Must NOT be blank.
+      applicable-type: ${STARLIGHT_SPECTRE_DIRECT_PUBLISH_APPLICABLE_TYPE:de.telekom.ei.listener}
+      # Ordered rules; first full match wins. Each rule REQUIRES target-event-type, issue, consumer and
+      # provider (all validated at startup; an incomplete rule fails the boot). Matched for exact equality
+      # against event.data.{issue,consumer,provider}. Typically supplied via config-map / Helm values, e.g.:
+      #   rules:
+      #     - target-event-type: de.telekom.ei.listener.eni--example-team--example-application
+      #       issue: /eni/example/v1
+      #       consumer: eni--example-consumer--example-app
+      #       provider: eni--example-provider--example-app
+      rules: []
   reporting:
     redis:
       enabled: ${STARLIGHT_REPORTING_REDIS_ENABLED:false}
