@@ -4,15 +4,18 @@
 
 package de.telekom.horizon.starlight.config.tenancy;
 
+import jakarta.validation.Valid;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Getter
 @Setter
+@Validated
 @ConfigurationProperties(prefix = "starlight.tenants")
 public class TenantConfiguration {
 
@@ -24,6 +27,6 @@ public class TenantConfiguration {
     /**
      * A list of rules that associate event-types with a specific publishing topic.
      */
-    private List<TenantMapping> rules = new ArrayList<>();
+    private List<@Valid TenantMapping> rules = new ArrayList<>();
 
 }
