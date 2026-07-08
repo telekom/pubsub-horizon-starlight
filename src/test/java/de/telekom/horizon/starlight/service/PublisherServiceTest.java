@@ -15,6 +15,7 @@ import de.telekom.eni.pandora.horizon.tracing.HorizonTracer;
 import de.telekom.eni.pandora.horizon.tracing.ScopedDebugSpanWrapper;
 import de.telekom.horizon.starlight.cache.PublisherCache;
 import de.telekom.horizon.starlight.config.StarlightConfig;
+import de.telekom.horizon.starlight.config.tenancy.TenantConfiguration;
 import de.telekom.horizon.starlight.exception.*;
 import de.telekom.horizon.starlight.service.impl.TokenServiceMockImpl;
 import de.telekom.horizon.starlight.test.utils.HazelcastTestInstance;
@@ -73,6 +74,8 @@ class PublisherServiceTest {
     PublisherCache publisherCache;
     @MockBean
     StarlightConfig starlightConfig;
+    @MockBean
+    TenantConfiguration tenantConfig;
     @MockBean
     SchemaValidationService schemaValidationService;
     @MockBean
