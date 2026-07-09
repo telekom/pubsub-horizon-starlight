@@ -84,7 +84,7 @@ starlight:
       rules: []
   tenants:
     enabled: false
-    rules: []
+    rules: {}
   reporting:
     redis:
       enabled: ${STARLIGHT_REPORTING_REDIS_ENABLED:false}
