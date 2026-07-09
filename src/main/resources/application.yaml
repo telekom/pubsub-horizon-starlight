@@ -82,6 +82,9 @@ starlight:
       #       consumer: eni--example-consumer--example-app
       #       provider: eni--example-provider--example-app
       rules: []
+  tenants:
+    enabled: false
+    rules: {}
   reporting:
     redis:
       enabled: ${STARLIGHT_REPORTING_REDIS_ENABLED:false}

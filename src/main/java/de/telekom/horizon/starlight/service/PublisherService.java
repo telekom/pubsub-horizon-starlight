@@ -15,6 +15,7 @@ import de.telekom.eni.pandora.horizon.model.event.Status;
 import de.telekom.eni.pandora.horizon.tracing.HorizonTracer;
 import de.telekom.horizon.starlight.cache.PublisherCache;
 import de.telekom.horizon.starlight.config.StarlightConfig;
+import de.telekom.horizon.starlight.config.tenancy.TenantConfiguration;
 import de.telekom.horizon.starlight.exception.*;
 import jakarta.validation.Validator;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +41,8 @@ public class PublisherService {
     private final PublisherCache publisherCache;
 
     private final StarlightConfig starlightConfig;
+
+    private final TenantConfiguration tenantConfig;
 
     private final SchemaValidationService schemaValidationService;
 
@@ -71,6 +74,7 @@ public class PublisherService {
     public PublisherService(
             PublisherCache publisherCache,
             StarlightConfig starlightConfig,
+            TenantConfiguration tenantConfig,
             SchemaValidationService schemaValidationService,
             HorizonTracer tracer,
             HorizonMetricsHelper metricsHelper,
@@ -81,6 +85,7 @@ public class PublisherService {
     ) {
         this.publisherCache = publisherCache;
         this.starlightConfig = starlightConfig;
+        this.tenantConfig = tenantConfig;
         this.schemaValidationService = schemaValidationService;
         this.tracer = tracer;
         this.metricsHelper = metricsHelper;
@@ -167,7 +172,7 @@ public class PublisherService {
             tracer.addTagsToSpan(span, List.of(Pair.of("publisherId", publisherId)));
 
             span.annotate("send message to kafka");
-            eventWriter.send(starlightConfig.getPublishingTopic(), message, tracer).get();
+            eventWriter.send(getPublishingTopic(message), message, tracer).get();
 
             span.annotate("export metrics");
             metricsHelper.getRegistry().counter(METRIC_PUBLISHED_EVENTS, metricsHelper.buildTagsFromPublishedEventMessage(message)).increment();
@@ -177,6 +182,18 @@ public class PublisherService {
         } finally {
             span.finish();
         }
+    }
+
+    private String getPublishingTopic(PublishedEventMessage message) {
+        if (tenantConfig.isEnabled()) {
+            final var eventType = message.getEvent().getType();
+            final var topic = tenantConfig.getRules().get(eventType);
+
+            if (topic != null)
+                return topic;
+        }
+
+        return starlightConfig.getPublishingTopic();
     }
 
     private void handlePublishException(Exception e) throws PayloadTooLargeException, CouldNotPublishEventMessageException {

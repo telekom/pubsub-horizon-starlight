@@ -15,6 +15,7 @@ import de.telekom.eni.pandora.horizon.tracing.HorizonTracer;
 import de.telekom.eni.pandora.horizon.tracing.ScopedDebugSpanWrapper;
 import de.telekom.horizon.starlight.cache.PublisherCache;
 import de.telekom.horizon.starlight.config.StarlightConfig;
+import de.telekom.horizon.starlight.config.tenancy.TenantConfiguration;
 import de.telekom.horizon.starlight.exception.*;
 import de.telekom.horizon.starlight.service.impl.TokenServiceMockImpl;
 import de.telekom.horizon.starlight.test.utils.HazelcastTestInstance;
@@ -73,6 +74,8 @@ class PublisherServiceTest {
     PublisherCache publisherCache;
     @MockBean
     StarlightConfig starlightConfig;
+    @MockBean
+    TenantConfiguration tenantConfig;
     @MockBean
     SchemaValidationService schemaValidationService;
     @MockBean
@@ -361,6 +364,54 @@ class PublisherServiceTest {
         assertThat(result.containsKey("X-Secret-Token"), is(false));
         assertThat(result.containsKey("Content-Type"), is(true));
         assertThat(result.containsKey("Accept"), is(true));
+    }
+
+    // --- getPublishingTopic tests ---
+
+    private String invokeGetPublishingTopic(PublishedEventMessage message) throws Exception {
+        Method method = PublisherService.class.getDeclaredMethod("getPublishingTopic", PublishedEventMessage.class);
+        method.setAccessible(true);
+        try {
+            return (String) method.invoke(publisherService, message);
+        } catch (InvocationTargetException e) {
+            throw (Exception) e.getCause();
+        }
+    }
+
+    @Test
+    @DisplayName("getPublishingTopic returns default topic when tenant config is disabled")
+    void getPublishingTopic_returnsFallbackTopicWhenTenantConfigDisabled() throws Exception {
+        when(tenantConfig.isEnabled()).thenReturn(false);
+        when(starlightConfig.getPublishingTopic()).thenReturn(DEFAULT_TOPIC);
+
+        var message = new PublishedEventMessage(createNewEvent(), DEFAULT_ENVIRONMENT);
+
+        assertThat(invokeGetPublishingTopic(message), is(DEFAULT_TOPIC));
+    }
+
+    @Test
+    @DisplayName("getPublishingTopic returns tenant-specific topic when a matching rule is found")
+    void getPublishingTopic_returnsMappedTopicWhenMatchingRuleFound() throws Exception {
+        var tenantTopic = "tenant-specific-topic";
+
+        when(tenantConfig.isEnabled()).thenReturn(true);
+        when(tenantConfig.getRules()).thenReturn(Map.of("pandora.horizon.starlight.test.caas.v1", tenantTopic));
+
+        var message = new PublishedEventMessage(createNewEvent(), DEFAULT_ENVIRONMENT);
+
+        assertThat(invokeGetPublishingTopic(message), is(tenantTopic));
+    }
+
+    @Test
+    @DisplayName("getPublishingTopic returns default topic when tenant config is enabled but no rule matches the event type")
+    void getPublishingTopic_returnsFallbackTopicWhenNoMatchingRuleFound() throws Exception {
+        when(tenantConfig.isEnabled()).thenReturn(true);
+        when(tenantConfig.getRules()).thenReturn(Map.of("some.other.event.type", "other-topic"));
+        when(starlightConfig.getPublishingTopic()).thenReturn(DEFAULT_TOPIC);
+
+        var message = new PublishedEventMessage(createNewEvent(), DEFAULT_ENVIRONMENT);
+
+        assertThat(invokeGetPublishingTopic(message), is(DEFAULT_TOPIC));
     }
 
     private void applyKafkaStubs(String topic, long offset, int partition, PublishedEventMessage message) throws Exception {
