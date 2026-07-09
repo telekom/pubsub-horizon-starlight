@@ -16,7 +16,6 @@ import de.telekom.eni.pandora.horizon.tracing.ScopedDebugSpanWrapper;
 import de.telekom.horizon.starlight.cache.PublisherCache;
 import de.telekom.horizon.starlight.config.StarlightConfig;
 import de.telekom.horizon.starlight.config.tenancy.TenantConfiguration;
-import de.telekom.horizon.starlight.config.tenancy.TenantMapping;
 import de.telekom.horizon.starlight.exception.*;
 import de.telekom.horizon.starlight.service.impl.TokenServiceMockImpl;
 import de.telekom.horizon.starlight.test.utils.HazelcastTestInstance;
@@ -394,12 +393,9 @@ class PublisherServiceTest {
     @DisplayName("getPublishingTopic returns tenant-specific topic when a matching rule is found")
     void getPublishingTopic_returnsMappedTopicWhenMatchingRuleFound() throws Exception {
         var tenantTopic = "tenant-specific-topic";
-        var mapping = new TenantMapping();
-        mapping.setEventTypes(List.of("pandora.horizon.starlight.test.caas.v1"));
-        mapping.setTopic(tenantTopic);
 
         when(tenantConfig.isEnabled()).thenReturn(true);
-        when(tenantConfig.getRules()).thenReturn(List.of(mapping));
+        when(tenantConfig.getRules()).thenReturn(Map.of("pandora.horizon.starlight.test.caas.v1", tenantTopic));
 
         var message = new PublishedEventMessage(createNewEvent(), DEFAULT_ENVIRONMENT);
 
@@ -409,12 +405,8 @@ class PublisherServiceTest {
     @Test
     @DisplayName("getPublishingTopic returns default topic when tenant config is enabled but no rule matches the event type")
     void getPublishingTopic_returnsFallbackTopicWhenNoMatchingRuleFound() throws Exception {
-        var mapping = new TenantMapping();
-        mapping.setEventTypes(List.of("some.other.event.type"));
-        mapping.setTopic("other-topic");
-
         when(tenantConfig.isEnabled()).thenReturn(true);
-        when(tenantConfig.getRules()).thenReturn(List.of(mapping));
+        when(tenantConfig.getRules()).thenReturn(Map.of("some.other.event.type", "other-topic"));
         when(starlightConfig.getPublishingTopic()).thenReturn(DEFAULT_TOPIC);
 
         var message = new PublishedEventMessage(createNewEvent(), DEFAULT_ENVIRONMENT);

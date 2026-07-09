@@ -17,7 +17,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 class TenantConfigurationTest {
 
@@ -35,24 +36,17 @@ class TenantConfigurationTest {
         factory.close();
     }
 
-    private TenantMapping mapping(List<String> eventTypes, String topic) {
-        var m = new TenantMapping();
-        m.setEventTypes(eventTypes);
-        m.setTopic(topic);
-        return m;
-    }
-
-    private TenantConfiguration configWith(TenantMapping... rules) {
+    private TenantConfiguration configWith(Map<String, String> rules) {
         var c = new TenantConfiguration();
         c.setEnabled(true);
-        c.setRules(List.of(rules));
+        c.setRules(rules);
         return c;
     }
 
     @Test
     @DisplayName("a fully-populated configuration has no violations")
     void fullyPopulatedIsValid() {
-        var config = configWith(mapping(List.of("com.example.event"), "example-topic"));
+        var config = configWith(Map.of("com.example.event", "example-topic"));
 
         var violations = validator.validate(config);
 
@@ -60,40 +54,53 @@ class TenantConfigurationTest {
     }
 
     @Test
-    @DisplayName("empty event-types on a mapping is a violation")
-    void emptyEventTypes() {
-        var config = configWith(mapping(List.of(), "example-topic"));
+    @DisplayName("empty rules map has no violations")
+    void emptyRulesIsValid() {
+        var config = configWith(Map.of());
 
         var violations = validator.validate(config);
 
-        assertFalse(violations.isEmpty(), "empty event-types must fail validation");
-        assertTrue(
-                violations.stream()
-                        .anyMatch(v -> v.getPropertyPath().toString().contains("eventTypes")));
+        assertTrue(violations.isEmpty(), "expected no violations, got: " + violations);
     }
 
     @Test
-    @DisplayName("a blank topic on a mapping is a violation")
-    void blankTopic() {
-        var config = configWith(mapping(List.of("com.example.event"), "  "));
+    @DisplayName("a blank topic in rules map is a violation")
+    void blankTopicValue() {
+        var config = configWith(Map.of("com.example.event", "  "));
 
         var violations = validator.validate(config);
 
         assertFalse(violations.isEmpty(), "blank topic must fail validation");
         assertTrue(
                 violations.stream()
-                        .anyMatch(v -> v.getPropertyPath().toString().contains("topic")));
+                        .anyMatch(v -> v.getPropertyPath().toString().contains("rules")));
     }
 
     @Test
-    @DisplayName("an incomplete mapping produces violations")
-    void incompleteMappingViolationCount() {
-        // empty eventTypes and blank topic
-        var config = configWith(mapping(List.of(), ""));
+    @DisplayName("null topic in rules map is a violation")
+    void nullTopicValue() {
+        var rules = new HashMap<String, String>();
+        rules.put("com.example.event", null);
+        var config = configWith(rules);
 
         var violations = validator.validate(config);
 
-        // eventTypes has @NotEmpty, topic has @NotBlank
+        assertFalse(violations.isEmpty(), "null topic must fail validation");
+        assertTrue(
+                violations.stream()
+                        .anyMatch(v -> v.getPropertyPath().toString().contains("rules")));
+    }
+
+    @Test
+    @DisplayName("multiple invalid topics produce multiple violations")
+    void invalidRuleValuesViolationCount() {
+        var rules = new HashMap<String, String>();
+        rules.put("com.example.event.one", "");
+        rules.put("com.example.event.two", "  ");
+        var config = configWith(rules);
+
+        var violations = validator.validate(config);
+
         assertEquals(2, violations.size(), "expected 2 violations, got: " + violations);
     }
 }
