@@ -187,14 +187,10 @@ public class PublisherService {
     private String getPublishingTopic(PublishedEventMessage message) {
         if (tenantConfig.isEnabled()) {
             final var eventType = message.getEvent().getType();
-            final var mapping = tenantConfig.getRules().stream()
-                .filter(
-                        m -> m.getEventTypes().contains(eventType)
-                )
-                .findFirst();
+            final var topic = tenantConfig.getRules().get(eventType);
 
-            if (mapping.isPresent())
-                return mapping.get().getTopic();
+            if (topic != null)
+                return topic;
         }
 
         return starlightConfig.getPublishingTopic();

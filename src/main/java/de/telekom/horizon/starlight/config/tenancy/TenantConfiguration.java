@@ -4,14 +4,14 @@
 
 package de.telekom.horizon.starlight.config.tenancy;
 
-import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -25,8 +25,8 @@ public class TenantConfiguration {
     private boolean enabled = false;
 
     /**
-     * A list of rules that associate event-types with a specific publishing topic.
+     * A map of rules that associate single event-types with a topic.
      */
-    private List<@Valid TenantMapping> rules = new ArrayList<>();
+    private Map<String, @NotBlank String> rules = new HashMap<>();
 
 }
