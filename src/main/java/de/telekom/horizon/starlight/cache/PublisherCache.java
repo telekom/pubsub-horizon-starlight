@@ -33,7 +33,10 @@ public class PublisherCache {
 
     public Set<String> findPublisherIds(String environment, String eventType) {
         var env = environment;
-        if (Objects.equals(starlightConfig.getDefaultEnvironment(), environment)) {
+        if (
+                Objects.equals(starlightConfig.getDefaultEnvironment(), environment) &&
+                !starlightConfig.isRetainSubscriptionEnvironment()
+        ) {
             env = "default";
         }
 
