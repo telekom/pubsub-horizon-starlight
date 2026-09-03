@@ -26,7 +26,7 @@ public class StarlightConfig {
     @Value("${starlight.features.enforceSchemaValidation:false}")
     private boolean enforceSchemaValidation;
 
-    @Value("${starlight.features.retainSubscriptionEnvironment:false}}")
+    @Value("${starlight.features.retainSubscriptionEnvironment:false}")
     private boolean retainSubscriptionEnvironment;
 
     @Value("#{'${starlight.security.headerPropagationBlacklist}'.split(',')}")
