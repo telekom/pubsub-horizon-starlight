@@ -26,6 +26,9 @@ public class StarlightConfig {
     @Value("${starlight.features.enforceSchemaValidation:false}")
     private boolean enforceSchemaValidation;
 
+    @Value("${starlight.features.localSubscriptionCache:false}")
+    private boolean enableLocalSubscriptionCache;
+
     @Value("#{'${starlight.security.headerPropagationBlacklist}'.split(',')}")
     private List<String> headerPropagationBlacklist;
 
