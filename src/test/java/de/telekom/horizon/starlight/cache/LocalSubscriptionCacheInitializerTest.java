@@ -11,6 +11,7 @@ import org.springframework.boot.actuate.health.Status;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.doThrow;
 
 class LocalSubscriptionCacheInitializerTest {
 
@@ -27,5 +28,16 @@ class LocalSubscriptionCacheInitializerTest {
         ordered.verify(cache).prepare();
         ordered.verify(cache).activate();
         assertEquals(Status.UP, initializer.health().getStatus());
+    }
+
+    @Test
+    void shouldKeepServiceAvailableWhenCacheInitializationFails() {
+        var cache = mock(LocalSubscriptionCache.class);
+        doThrow(new IllegalStateException("Mongo unavailable")).when(cache).prepare();
+        var initializer = new LocalSubscriptionCacheInitializer(cache);
+
+        initializer.run(null);
+
+        assertEquals(Status.DOWN, initializer.health().getStatus());
     }
 }

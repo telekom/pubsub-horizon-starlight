@@ -4,15 +4,13 @@
 
 package de.telekom.horizon.starlight.cache;
 
-import de.telekom.eni.pandora.horizon.cache.service.JsonCacheService;
-import de.telekom.eni.pandora.horizon.cache.service.LocalSubscriptionCache;
+import de.telekom.eni.pandora.horizon.cache.service.CacheReader;
 import de.telekom.eni.pandora.horizon.cache.util.Query;
 import de.telekom.eni.pandora.horizon.exception.JsonCacheException;
 import de.telekom.eni.pandora.horizon.kubernetes.resource.SubscriptionResource;
 import de.telekom.horizon.starlight.config.StarlightConfig;
 import de.telekom.horizon.starlight.exception.SubscriptionMalformedException;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
@@ -20,22 +18,17 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-@Slf4j
 @Component
 public class PublisherCache {
 
     private final StarlightConfig starlightConfig;
 
-    private final JsonCacheService<SubscriptionResource> subscriptionCache;
-
-    private final ObjectProvider<LocalSubscriptionCache> localSubscriptionCacheProvider;
+    private final CacheReader<SubscriptionResource> subscriptionCache;
 
     public PublisherCache(StarlightConfig starlightConfig,
-                          JsonCacheService<SubscriptionResource> subscriptionCache,
-                          ObjectProvider<LocalSubscriptionCache> localSubscriptionCacheProvider) {
+                          @Qualifier("subscriptionCacheReader") CacheReader<SubscriptionResource> subscriptionCache) {
         this.starlightConfig = starlightConfig;
         this.subscriptionCache = subscriptionCache;
-        this.localSubscriptionCacheProvider = localSubscriptionCacheProvider;
     }
 
     public Set<String> findPublisherIds(String environment, String eventType) {
@@ -44,26 +37,15 @@ public class PublisherCache {
             env = "default";
         }
 
+        var query = Query.builder(SubscriptionResource.class)
+                .addMatcher("spec.environment", env)
+                .addMatcher("spec.subscription.type", eventType)
+                .build();
         List<SubscriptionResource> list;
-        if (starlightConfig.isEnableLocalSubscriptionCache()) {
-            var localSubscriptionCache = localSubscriptionCacheProvider.getObject();
-            var startedAt = System.nanoTime();
-            list = localSubscriptionCache.getByQuery(env, eventType);
-            var accessTimeMicros = (System.nanoTime() - startedAt) / 1_000;
-            log.debug("Local subscription cache query completed: environment={}, eventType={}, durationMicros={}, matchingEntries={}, totalEntries={}",
-                    env, eventType, accessTimeMicros, list.size(), localSubscriptionCache.getEntryCount());
-        } else {
-            var query = Query.builder(SubscriptionResource.class)
-                    .addMatcher("spec.environment", env)
-                    .addMatcher("spec.subscription.type", eventType)
-                    .build();
-            try {
-                list = subscriptionCache.getQuery(query);
-            } catch (JsonCacheException e) {
-                log.error("Error occurred while executing query on JsonCacheService", e);
-
-                throw new SubscriptionMalformedException("A subscription with eventType: " + eventType + " is malformed", e);
-            }
+        try {
+            list = subscriptionCache.getQuery(query);
+        } catch (JsonCacheException e) {
+            throw new SubscriptionMalformedException("A subscription with eventType: " + eventType + " is malformed", e);
         }
 
         var publisherIds = new HashSet<String>();

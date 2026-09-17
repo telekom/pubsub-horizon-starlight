@@ -11,10 +11,12 @@ import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Component
+@Slf4j
 @ConditionalOnProperty(name = "starlight.features.localSubscriptionCache", havingValue = "true")
 public class LocalSubscriptionCacheInitializer implements ApplicationRunner, HealthIndicator {
 
@@ -27,9 +29,14 @@ public class LocalSubscriptionCacheInitializer implements ApplicationRunner, Hea
 
     @Override
     public void run(ApplicationArguments args) {
-        localSubscriptionCache.prepare();
-        localSubscriptionCache.activate();
-        initialized.set(true);
+        try {
+            localSubscriptionCache.prepare();
+            localSubscriptionCache.activate();
+            initialized.set(true);
+        } catch (RuntimeException exception) {
+            initialized.set(false);
+            log.warn("Local subscription cache initialization failed; using fallback cache", exception);
+        }
     }
 
     @Override
