@@ -4,8 +4,7 @@
 
 package de.telekom.horizon.starlight.cache;
 
-import de.telekom.eni.pandora.horizon.cache.service.CacheReader;
-import de.telekom.eni.pandora.horizon.cache.util.Query;
+import de.telekom.eni.pandora.horizon.cache.service.SubscriptionCacheReader;
 import de.telekom.eni.pandora.horizon.exception.JsonCacheException;
 import de.telekom.eni.pandora.horizon.kubernetes.resource.SubscriptionResource;
 import de.telekom.horizon.starlight.config.StarlightConfig;
@@ -23,10 +22,10 @@ public class PublisherCache {
 
     private final StarlightConfig starlightConfig;
 
-    private final CacheReader<SubscriptionResource> subscriptionCache;
+    private final SubscriptionCacheReader subscriptionCache;
 
     public PublisherCache(StarlightConfig starlightConfig,
-                          @Qualifier("subscriptionCacheReader") CacheReader<SubscriptionResource> subscriptionCache) {
+                          @Qualifier("subscriptionCacheReader") SubscriptionCacheReader subscriptionCache) {
         this.starlightConfig = starlightConfig;
         this.subscriptionCache = subscriptionCache;
     }
@@ -37,13 +36,9 @@ public class PublisherCache {
             env = "default";
         }
 
-        var query = Query.builder(SubscriptionResource.class)
-                .addMatcher("spec.environment", env)
-                .addMatcher("spec.subscription.type", eventType)
-                .build();
         List<SubscriptionResource> list;
         try {
-            list = subscriptionCache.getQuery(query);
+            list = subscriptionCache.findByEnvironmentAndEventType(env, eventType);
         } catch (JsonCacheException e) {
             throw new SubscriptionMalformedException("A subscription with eventType: " + eventType + " is malformed", e);
         }

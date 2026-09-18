@@ -4,8 +4,7 @@
 
 package de.telekom.horizon.starlight.cache;
 
-import de.telekom.eni.pandora.horizon.cache.service.FallbackCacheService;
-import de.telekom.eni.pandora.horizon.cache.util.Query;
+import de.telekom.eni.pandora.horizon.cache.service.SubscriptionCacheReader;
 import de.telekom.eni.pandora.horizon.exception.JsonCacheException;
 import de.telekom.eni.pandora.horizon.kubernetes.resource.SubscriptionResource;
 import de.telekom.horizon.starlight.config.StarlightConfig;
@@ -25,13 +24,13 @@ class PublisherCacheTest {
     private static final String EVENT_TYPE = "pandora.horizon.starlight.test.caas.v1";
 
     @MockBean
-    FallbackCacheService<SubscriptionResource> subscriptionCache;
+    SubscriptionCacheReader subscriptionCache;
     @MockBean
     StarlightConfig starlightConfig;
     @Test
     void malformedSubscriptionInCacheShouldThrowSubscriptionMalformedException() throws JsonCacheException {
 
-        when(subscriptionCache.getQuery(any(Query.class))).thenThrow(new JsonCacheException("subscription is malformed", new RuntimeException()));
+        when(subscriptionCache.findByEnvironmentAndEventType(any(), any())).thenThrow(new JsonCacheException("subscription is malformed", new RuntimeException()));
         PublisherCache publisherCacheMock = new PublisherCache(starlightConfig, subscriptionCache);
 
         var ex = assertThrows(SubscriptionMalformedException.class, () -> publisherCacheMock.findPublisherIds(DEFAULT_ENVIRONMENT, EVENT_TYPE));
@@ -40,7 +39,7 @@ class PublisherCacheTest {
     }
 
     @Test
-    void shouldUseLocalSubscriptionCacheWhenEnabled() throws JsonCacheException {
+    void shouldReturnPublisherIdsFromSubscriptionCache() throws JsonCacheException {
         var subscription = new SubscriptionResource();
         var spec = new de.telekom.eni.pandora.horizon.kubernetes.resource.SubscriptionResourceSpec();
         var subscriptionDetails = new de.telekom.eni.pandora.horizon.kubernetes.resource.Subscription();
@@ -49,7 +48,7 @@ class PublisherCacheTest {
         spec.setSubscription(subscriptionDetails);
         subscription.setSpec(spec);
         when(starlightConfig.getDefaultEnvironment()).thenReturn(DEFAULT_ENVIRONMENT);
-        when(subscriptionCache.getQuery(any(Query.class))).thenReturn(java.util.List.of(subscription));
+        when(subscriptionCache.findByEnvironmentAndEventType(any(), any())).thenReturn(java.util.List.of(subscription));
         var publisherCache = new PublisherCache(starlightConfig, subscriptionCache);
 
         var publisherIds = publisherCache.findPublisherIds(DEFAULT_ENVIRONMENT, EVENT_TYPE);
