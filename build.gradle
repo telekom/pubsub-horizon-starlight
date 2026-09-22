@@ -44,14 +44,8 @@ configurations {
 }
 
 repositories {
-    maven {
-        url = uri("https://central.sonatype.com/repository/maven-snapshots/")
-    }
+    mavenLocal()
     mavenCentral()
-}
-
-configurations.configureEach {
-    resolutionStrategy.force("de.telekom.eni:horizon-core:${horizonParentVersion}")
 }
 
 ext {

@@ -5,10 +5,10 @@
 package de.telekom.horizon.starlight.cache;
 
 import de.telekom.eni.pandora.horizon.cache.service.SubscriptionCacheReader;
-import de.telekom.eni.pandora.horizon.exception.JsonCacheException;
+import de.telekom.eni.pandora.horizon.exception.SubscriptionCacheReadException;
 import de.telekom.eni.pandora.horizon.kubernetes.resource.SubscriptionResource;
 import de.telekom.horizon.starlight.config.StarlightConfig;
-import de.telekom.horizon.starlight.exception.SubscriptionMalformedException;
+import de.telekom.horizon.starlight.exception.SubscriptionCacheAccessException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -39,8 +39,10 @@ public class PublisherCache {
         List<SubscriptionResource> list;
         try {
             list = subscriptionCache.findByEnvironmentAndEventType(env, eventType);
-        } catch (JsonCacheException e) {
-            throw new SubscriptionMalformedException("A subscription with eventType: " + eventType + " is malformed", e);
+        } catch (SubscriptionCacheReadException exception) {
+            throw new SubscriptionCacheAccessException(
+                    "Failed to read subscriptions for environment: " + env + " and event type: " + eventType,
+                    exception);
         }
 
         var publisherIds = new HashSet<String>();

@@ -5,10 +5,10 @@
 package de.telekom.horizon.starlight.cache;
 
 import de.telekom.eni.pandora.horizon.cache.service.SubscriptionCacheReader;
-import de.telekom.eni.pandora.horizon.exception.JsonCacheException;
+import de.telekom.eni.pandora.horizon.exception.SubscriptionCacheReadException;
 import de.telekom.eni.pandora.horizon.kubernetes.resource.SubscriptionResource;
 import de.telekom.horizon.starlight.config.StarlightConfig;
-import de.telekom.horizon.starlight.exception.SubscriptionMalformedException;
+import de.telekom.horizon.starlight.exception.SubscriptionCacheAccessException;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -28,18 +28,20 @@ class PublisherCacheTest {
     @MockBean
     StarlightConfig starlightConfig;
     @Test
-    void malformedSubscriptionInCacheShouldThrowSubscriptionMalformedException() throws JsonCacheException {
+    void cacheReadFailureShouldThrowSubscriptionCacheAccessException() throws SubscriptionCacheReadException {
 
-        when(subscriptionCache.findByEnvironmentAndEventType(any(), any())).thenThrow(new JsonCacheException("subscription is malformed", new RuntimeException()));
+        when(subscriptionCache.findByEnvironmentAndEventType(any(), any()))
+                .thenThrow(new SubscriptionCacheReadException("cache unavailable", new RuntimeException()));
         PublisherCache publisherCacheMock = new PublisherCache(starlightConfig, subscriptionCache);
 
-        var ex = assertThrows(SubscriptionMalformedException.class, () -> publisherCacheMock.findPublisherIds(DEFAULT_ENVIRONMENT, EVENT_TYPE));
+        var ex = assertThrows(SubscriptionCacheAccessException.class,
+                () -> publisherCacheMock.findPublisherIds(DEFAULT_ENVIRONMENT, EVENT_TYPE));
         assertTrue(ex.getMessage().contains(EVENT_TYPE));
-        assertInstanceOf(JsonCacheException.class, ex.getCause());
+        assertInstanceOf(SubscriptionCacheReadException.class, ex.getCause());
     }
 
     @Test
-    void shouldReturnPublisherIdsFromSubscriptionCache() throws JsonCacheException {
+    void shouldReturnPublisherIdsFromSubscriptionCache() throws SubscriptionCacheReadException {
         var subscription = new SubscriptionResource();
         var spec = new de.telekom.eni.pandora.horizon.kubernetes.resource.SubscriptionResourceSpec();
         var subscriptionDetails = new de.telekom.eni.pandora.horizon.kubernetes.resource.Subscription();
