@@ -60,6 +60,14 @@ ext {
 }
 
 dependencies {
+    constraints {
+        implementation("de.telekom.eni:horizon-core:${horizonParentVersion}") {
+            version {
+                strictly horizonParentVersion
+            }
+        }
+    }
+
     // Spring
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
