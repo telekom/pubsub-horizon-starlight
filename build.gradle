@@ -44,7 +44,6 @@ configurations {
 }
 
 repositories {
-    removeAll { repository -> repository.name == 'MavenLocal' }
     mavenCentral()
     maven {
         url = uri('https://central.sonatype.com/repository/maven-snapshots/')
@@ -60,13 +59,6 @@ ext {
 }
 
 dependencies {
-    constraints {
-        implementation("de.telekom.eni:horizon-core:${horizonParentVersion}") {
-            version {
-                strictly horizonParentVersion
-            }
-        }
-    }
 
     // Spring
     implementation 'org.springframework.boot:spring-boot-starter-security'
