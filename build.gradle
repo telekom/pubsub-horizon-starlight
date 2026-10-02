@@ -113,6 +113,7 @@ java {
 
 test {
     useJUnitPlatform()
+    systemProperty 'horizon.cache.local-subscription-cache.zoo-keeper.enabled', 'false'
     finalizedBy jacocoTestReport
 }
 

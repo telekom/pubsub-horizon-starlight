@@ -104,7 +104,22 @@ horizon:
   cache:
     enabled: true
     local-subscription-cache:
-      enabled: true
+      enabled: ${STARLIGHT_CACHE_LOCAL_SUBSCRIPTION_CACHE_ENABLED:true}
+      fallback-mode: ${STARLIGHT_CACHE_LOCAL_SUBSCRIPTION_CACHE_FALLBACK_MODE:hazelcast-with-mongo-fallback}
+      snapshot-collection: ${STARLIGHT_CACHE_LOCAL_SUBSCRIPTION_CACHE_SNAPSHOT_COLLECTION:subscriptions.subscriber.horizon.telekom.de.v1-snapshots}
+      head-collection: ${STARLIGHT_CACHE_LOCAL_SUBSCRIPTION_CACHE_HEAD_COLLECTION:subscriptions.subscriber.horizon.telekom.de.v1-head}
+      stale-cache-read-grace-period: ${STARLIGHT_CACHE_LOCAL_SUBSCRIPTION_CACHE_STALE_CACHE_READ_GRACE_PERIOD:120s}
+      initial-snapshot-timeout: ${STARLIGHT_CACHE_LOCAL_SUBSCRIPTION_CACHE_INITIAL_SNAPSHOT_TIMEOUT:120s}
+      zoo-keeper:
+        enabled: ${STARLIGHT_CACHE_LOCAL_SUBSCRIPTION_CACHE_ZOO_KEEPER_ENABLED:true}
+        ensemble-tracker-enabled: ${STARLIGHT_CACHE_LOCAL_SUBSCRIPTION_CACHE_ZOO_KEEPER_ENSEMBLE_TRACKER_ENABLED:true}
+        connect-string: ${STARLIGHT_CACHE_LOCAL_SUBSCRIPTION_CACHE_ZOO_KEEPER_CONNECT_STRING:horizon-zookeeper.integration.svc.cluster.local:2181}
+        prepared-path: ${STARLIGHT_CACHE_LOCAL_SUBSCRIPTION_CACHE_ZOO_KEEPER_PREPARED_PATH:/horizon/subscriptions/prepared}
+        activate-path: ${STARLIGHT_CACHE_LOCAL_SUBSCRIPTION_CACHE_ZOO_KEEPER_ACTIVATE_PATH:/horizon/subscriptions/activate}
+        connection-timeout: ${STARLIGHT_CACHE_LOCAL_SUBSCRIPTION_CACHE_ZOO_KEEPER_CONNECTION_TIMEOUT:15s}
+        session-timeout: ${STARLIGHT_CACHE_LOCAL_SUBSCRIPTION_CACHE_ZOO_KEEPER_SESSION_TIMEOUT:60s}
+        reconcile-interval: ${STARLIGHT_CACHE_LOCAL_SUBSCRIPTION_CACHE_ZOO_KEEPER_RECONCILE_INTERVAL:60s}
+        snapshot-sync-jitter: ${STARLIGHT_CACHE_LOCAL_SUBSCRIPTION_CACHE_ZOO_KEEPER_SNAPSHOT_SYNC_JITTER:10s}
     kubernetesServiceDns: ${STARLIGHT_CACHE_SERVICE_DNS:horizon-quasar-discovery-headless.integration.svc.cluster.local}
   kafka:
     bootstrapServers: ${STARLIGHT_KAFKA_BROKERS:kafka:9092}
