@@ -4,13 +4,12 @@
 
 package de.telekom.horizon.starlight.cache;
 
-import de.telekom.eni.pandora.horizon.cache.service.JsonCacheService;
-import de.telekom.eni.pandora.horizon.cache.util.Query;
-import de.telekom.eni.pandora.horizon.exception.JsonCacheException;
+import de.telekom.eni.pandora.horizon.cache.service.SubscriptionCacheReader;
+import de.telekom.eni.pandora.horizon.exception.SubscriptionCacheReadException;
 import de.telekom.eni.pandora.horizon.kubernetes.resource.SubscriptionResource;
 import de.telekom.horizon.starlight.config.StarlightConfig;
-import de.telekom.horizon.starlight.exception.SubscriptionMalformedException;
-import lombok.extern.slf4j.Slf4j;
+import de.telekom.horizon.starlight.exception.SubscriptionCacheAccessException;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
@@ -18,15 +17,15 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-@Slf4j
 @Component
 public class PublisherCache {
 
     private final StarlightConfig starlightConfig;
 
-    private final JsonCacheService<SubscriptionResource> subscriptionCache;
+    private final SubscriptionCacheReader subscriptionCache;
 
-    public PublisherCache(StarlightConfig starlightConfig, JsonCacheService<SubscriptionResource> subscriptionCache) {
+    public PublisherCache(StarlightConfig starlightConfig,
+                          @Qualifier("subscriptionCacheReader") SubscriptionCacheReader subscriptionCache) {
         this.starlightConfig = starlightConfig;
         this.subscriptionCache = subscriptionCache;
     }
@@ -37,17 +36,13 @@ public class PublisherCache {
             env = "default";
         }
 
-        var builder = Query.builder(SubscriptionResource.class)
-                .addMatcher("spec.environment", env)
-                .addMatcher("spec.subscription.type", eventType);
-
         List<SubscriptionResource> list;
         try {
-            list = subscriptionCache.getQuery(builder.build());
-        } catch (JsonCacheException e) {
-            log.error("Error occurred while executing query on JsonCacheService", e);
-
-            throw new SubscriptionMalformedException("A subscription with eventType: " + eventType + " is malformed", e);
+            list = subscriptionCache.findByEnvironmentAndEventType(env, eventType);
+        } catch (SubscriptionCacheReadException exception) {
+            throw new SubscriptionCacheAccessException(
+                    "Failed to read subscriptions for environment: " + env + " and event type: " + eventType,
+                    exception);
         }
 
         var publisherIds = new HashSet<String>();
