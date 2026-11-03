@@ -4,18 +4,16 @@
 
 package de.telekom.horizon.starlight.cache;
 
-import de.telekom.eni.pandora.horizon.cache.service.SubscriptionCacheReader;
-import de.telekom.eni.pandora.horizon.exception.SubscriptionCacheReadException;
 import de.telekom.eni.pandora.horizon.kubernetes.resource.SubscriptionResource;
+import de.telekom.eni.pandora.horizon.subscription.SubscriptionRepository;
 import de.telekom.horizon.starlight.config.StarlightConfig;
-import de.telekom.horizon.starlight.exception.SubscriptionCacheAccessException;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest()
 class PublisherCacheTest {
@@ -24,24 +22,12 @@ class PublisherCacheTest {
     private static final String EVENT_TYPE = "pandora.horizon.starlight.test.caas.v1";
 
     @MockBean
-    SubscriptionCacheReader subscriptionCache;
+    SubscriptionRepository subscriptionCache;
     @MockBean
     StarlightConfig starlightConfig;
-    @Test
-    void cacheReadFailureShouldThrowSubscriptionCacheAccessException() throws SubscriptionCacheReadException {
-
-        when(subscriptionCache.findByEnvironmentAndEventType(any(), any()))
-                .thenThrow(new SubscriptionCacheReadException("cache unavailable", new RuntimeException()));
-        PublisherCache publisherCacheMock = new PublisherCache(starlightConfig, subscriptionCache);
-
-        var ex = assertThrows(SubscriptionCacheAccessException.class,
-                () -> publisherCacheMock.findPublisherIds(DEFAULT_ENVIRONMENT, EVENT_TYPE));
-        assertTrue(ex.getMessage().contains(EVENT_TYPE));
-        assertInstanceOf(SubscriptionCacheReadException.class, ex.getCause());
-    }
 
     @Test
-    void shouldReturnPublisherIdsFromSubscriptionCache() throws SubscriptionCacheReadException {
+    void shouldReturnPublisherIdsFromSubscriptionCache() {
         var subscription = new SubscriptionResource();
         var spec = new de.telekom.eni.pandora.horizon.kubernetes.resource.SubscriptionResourceSpec();
         var subscriptionDetails = new de.telekom.eni.pandora.horizon.kubernetes.resource.Subscription();
@@ -50,7 +36,7 @@ class PublisherCacheTest {
         spec.setSubscription(subscriptionDetails);
         subscription.setSpec(spec);
         when(starlightConfig.getDefaultEnvironment()).thenReturn(DEFAULT_ENVIRONMENT);
-        when(subscriptionCache.findByEnvironmentAndEventType(any(), any())).thenReturn(java.util.List.of(subscription));
+        when(subscriptionCache.get(any(), any())).thenReturn(java.util.List.of(subscription));
         var publisherCache = new PublisherCache(starlightConfig, subscriptionCache);
 
         var publisherIds = publisherCache.findPublisherIds(DEFAULT_ENVIRONMENT, EVENT_TYPE);

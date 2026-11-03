@@ -4,9 +4,8 @@
 
 package de.telekom.horizon.starlight.service.reporting;
 
-import de.telekom.eni.pandora.horizon.cache.service.JsonCacheService;
-import de.telekom.eni.pandora.horizon.kubernetes.resource.SubscriptionResource;
 import de.telekom.eni.pandora.horizon.model.event.Event;
+import de.telekom.eni.pandora.horizon.subscription.SubscriptionRepository;
 import de.telekom.horizon.starlight.test.utils.EmbeddedKafkaHolder;
 import de.telekom.horizon.starlight.test.utils.HorizonTestHelper;
 import org.junit.jupiter.api.Test;
@@ -33,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class RedisReportingServiceTest {
 
     @MockBean
-    JsonCacheService<SubscriptionResource> subscriptionCache;
+    SubscriptionRepository subscriptionRepository;
 
     public static final GenericContainer<?> redisContainer;
     public static final EmbeddedKafkaBroker broker;

@@ -56,6 +56,8 @@ repositories {
 ext {
     // this is internal, overwrite with your specific implementation if you want
     schemaValidationImplDependency = System.getenv('ADDITIONAL_SCHEMASTORE_IMPL') ?: System.getProperty("schemaStoreImplMavenDependency") ?: ""
+    // Boot 3.2's Testcontainers 1.19 uses Docker API 1.32, rejected by Docker 29+
+    set('testcontainers.version', '1.21.4')
 }
 
 dependencies {
