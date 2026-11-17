@@ -58,6 +58,9 @@ ext {
     schemaValidationImplDependency = System.getenv('ADDITIONAL_SCHEMASTORE_IMPL') ?: System.getProperty("schemaStoreImplMavenDependency") ?: ""
 }
 
+// Docker Engine 29+ (GitHub runners) rejects the API version used by Testcontainers < 1.21.4
+ext['testcontainers.version'] = '1.21.4'
+
 dependencies {
 
     // Spring
